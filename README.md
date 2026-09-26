@@ -10,6 +10,21 @@
 - **宿主路由**：`/shub/api/<method>` JSON 网关（session/fs 基础）+ `/shub/file|upload|bundle`（md 渲染/惰性 chunk），全部前置信任围栏。
 - **全屏**：属 DSH WEB 应用层能力（不由本插件提供）。
 
+## 仓库与分支
+
+唯一代码仓库 = `IamWWT/dsh-plugins`（private monorepo，2026-09-26 起自研代码唯一仓），本目录为 `dsh-plugins/dsh-sidebar-hub/`。
+分支：`main`（集成）/ `ubuntu`（本机 4090 开发）/ `windows`（远程笔记本侧，用户维护）；后两者由 agent 融合进 `main`。
+安装一律 tgz（`pnpm check` → `npm pack` → `dsh-dev plugin --profile web add <tgz>`，重打包必须升版本号），无 link 安装。
+
+## 环境支持矩阵（2026-09-26 双环境约定，总约定见 [`../docs/ENV-COMPATIBILITY.md`](../docs/ENV-COMPATIBILITY.md)）
+
+| 环境 | 支持度 | 说明 |
+|---|---|---|
+| `ubuntu-4090`（本机） | **全量** | 源码树 + systemd（3082/3083）；`pnpm check` 全绿 + 测试实例 UI 验收 35/35 |
+| `windows-lite`（远程笔记本） | **全量** | 源码树 + dsh-dev 方式手动启动（无 systemd）；本插件无本地模型 / 数据库 / Python 依赖，行为一致 |
+
+环境差异走配置键（本插件配置 = DSH settings 命名空间 `dsh-sidebar-hub`，全局一份；settings 不可用时退内存态并标「未持久化」），不做 OS 探测分支；`systemctl` / Bash 命令仅适用于 `ubuntu-4090`。
+
 ## 文档
 
 - [AGENTS.md](AGENTS.md) — 开发规范（SDD 流程、红线、命令）
@@ -48,7 +63,7 @@ DSH_HOME=<独立测试 DSH_HOME> pnpm dsh web --port 3084 --no-open
 
 ## Windows / Ubuntu 共用目录
 
-本项目遵循 [DeepSeek 共用目录约定](../dsh-agent-presets/docs/DIRECTORY-LAYOUT.md)。管理根统一写作 `<DEEPSEEK_ROOT>`（`.../deepseek/`），历史部署记录不能视为当前机器状态；Bash/systemd 命令只适用于对应环境，配置文件中的路径须在本机解析。
+本项目遵循 [DeepSeek 共用目录约定](../dsh-agent-presets/docs/DIRECTORY-LAYOUT.md)。管理根统一写作 `<DEEPSEEK_ROOT>`（`.../deepseek/`），历史部署记录不能视为当前机器状态；`systemctl` 与 Bash 命令仅适用于 `ubuntu-4090`（`windows-lite` 为源码树 + dsh-dev 方式手动启动，无 systemd），配置文件中的路径须在本机解析。
 
 ## 0.1.2 · 2026-09-25
 
