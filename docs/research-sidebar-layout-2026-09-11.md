@@ -1,0 +1,393 @@
+# dsh 插件「右侧边栏内容排列方式」调研
+
+> 调研日期：2026-09-11（deepseek-harness 当前 checkout；插件源码取当天工作区快照）。
+> 结论分「框架机制」与「插件实践」两层，全部基于仓库内一手来源（文档/源码），每条给出可追溯出处（文件:行号）。未找到的机制如实标注，不作推测。
+
+## 0. 结论速览（TL;DR）
+
+- 右侧边栏（Right Sidebar）是 dsh Web Client 的**每会话一份停靠面**：pane（分栏）＋ tab（标签）＋ float（浮窗）三种排布由框架完全接管，插件**不需要、也不能**自己拼布局引擎，只需**两阶段注册一个 tab 类型**（静态定义 + keyed 正文 slot）。
+- 内容「怎么排」分两层：
+  1. **框架层**（列层面的排列）：tab 条 = chip 胶囊（唯一控件是关闭）→ 添加控件 → 分栏控件 → 面板控件；pane 最多 2 格、分隔条 20%–80%；引导页按各类型 `guide[].order` 排胶囊；右键菜单项按注册顺序追加。插件只能通过 `guide[].order` 和菜单项（`sidebar.right.tab.menu.item`）参与这一层，其余是产品语义。
+  2. **插件层**（tab 正文内部的排列）：框架**不给任何内置布局组件**——正文贴 pane 边缘、自己留白、自己组织（纵向滚动列、分节卡片、内部子 tab、多栏），样式走自己的固定类名 + `--dsw-*` token。
+- 自研三个工作台插件已形成统一实践：`sidebarRightTabs.register`（页类型 + guide 入口，order 10/20/30/40 与内置 files 同排引导页）＋ `slots.inject('sidebar.right.pane.tab', key=<包名>)` 正文 ＋ 启动 `openTab()` 自动打开；正文内部各用「顶部栏 → 内部 tabs/多栏 → 卡片面板 → 状态条」骨架。
+- 框架不提供：正文内嵌套停靠（只能整列层面 split/float）、布局持久化（刷新即折叠）、`ctx.sidebarRight` 只读快照、undo 界面。
+
+---
+
+## 1. 框架机制（一手来源：docs/subsystems/sidebar-right.zh.md、packages/client/ui-sidebar-right/README.zh.md、packages/client/ui-dockkit/README.zh.md、Agent Note .agents/notes/implemented/feature/2026-09-04-right-sidebar-docking-infrastructure.zh.md）
+
+### 1.1 定位与归属
+
+右侧 Sidebar 是 Web Client 里**每个会话一份**的停靠面：会话区旁的一列 pane 与 tab，按地址寻址的内容（工作区文件、目录树、插件页面）在这里打开、分栏、浮出、关闭（sidebar-right.zh.md §定位与归属）。归属：
+
+| 包 | 职责 |
+|---|---|
+| `@deepseek-ai/dsh-client-ui-sidebar-right` | 面板席位、`ctx.sidebarRightTabs`、`ctx.sidebarRight`、Tab 域、引导类型 |
+| `@deepseek-ai/dsh-client-ui-dockkit` | 纯布局引擎 + React 面；**内部依赖，不是稳定接口** |
+| `@deepseek-ai/dsh-client-resources` | `ctx.resources` / `useResource`：地址 → 活数据 |
+| `@deepseek-ai/dsh-api-workspace-files` | Host 工作区文件服务 + Client `file` 资源提供方 |
+
+排布规则：每个会话恰有一个停靠面（会话作用域 slot store，`rightbar.session` 绘制，slot 层级见 docs/subsystems/slots.md:165-172）；root 作用域 `rightbar` 控制器只在选中 Conversation 时挂载。每次布局变化都是 dockkit 纯规划器算出的一条**历史记录**（`@internal` 才能 undo/redo，产品无控件）。停靠 pane 从不空着：根 pane 被清空时按已注册引导入口补默认页（contract/seed.ts `defaultSeed`）。状态只在内存：刷新后每个会话回到折叠态，切换会话各面保持原状。
+
+### 1.2 布局引擎（dockkit）在框架层怎么“排列”
+
+- 归一化递归分裂树：`nodes` 按 id 索引、`rootId` 指向根、`floats` 自底向上排列。`PaneId`/`SplitId`/`TabId` 是带 brand 的字符串，互不可互换（dockkit README §两层结构）。
+- 操作可逆：`applyOp` 返回下一状态＋撤销操作；`Sequencer` 线性历史，**一次手势/命令 = 一条意图**（ui-sidebar-right README §state：每个动作记一条历史，无论需要多少操作）。
+- 产品限制（ui-sidebar-right 传入 dockkit，通用引擎默认 4 格）：**最多两个水平 pane，分隔条 20%–80%**；格太窄时分栏控件禁用或隐藏；拆格要求两半都能容下不可收缩部分（tab 条固定控件 + 80px 最小 chip ≈ 100px 足印）（dockkit README §interaction-rules）。
+- 浮窗 = `host:'float'` 的 pane、容量 1 tab、不画 tab 条：把 chip **拖出停靠区**即浮出；`ctx.sidebarRight.float(tabId)` 可编程触发。
+- 面板没有标题行。**tab 条就是面板的整条上边**，从左到右：chip 胶囊（唯一控件是关闭，右键上下文菜单可加插件条目）→ 添加控件（仅当该 pane 无引导 tab 时绘制，`openTab('guide', {paneId, revealIfOpened:false})`）→ 分栏控件 → 右上 pane tab 条末端的两个面板控件（形态切换 / 折叠）。chip 盒是唯一收缩元素（80px 下限，横向滚动 + 24px 渐隐），条末控件永不收缩（ui-sidebar-right README §呈现形态；dockkit README）。
+- 两种呈现：`push`（普通，面板锚在右缘、会话区让出宽度，两种模式共用同一棵已挂载内容树，切换不重挂载）与 `fullscreen`（覆盖窗口，保留底层列占位）；宽度 <768px 自动全屏。展开入口 = 会话 header 角落按钮（`conversation.session.header.corner`）。
+- 正文内容排列：**tab 正文由嵌入方（插件）全权决定**——正文贴着 pane 边缘和 tab 条底边绘制、自己决定留白与内部布局；pane `min-width:0; overflow:hidden`，内容溢出在正文内滚动（dockkit README §embedding-it）。
+
+### 1.3 Tab 类型注册契约（插件接入的唯一入口）
+
+两阶段注册，共用 `id`（sidebar-right.zh.md §Tab 类型注册；tab-registry.ts；ui-sidebar-files/src/client/index.ts 是内置「走同一条公开路径」的活模板）：
+
+**阶段一 · 静态定义**：`ctx.sidebarRightTabs.register(definition)`（放在自己的 `ctx.effect`；返回 disposer，与插件同寿；同一 `id` 二次注册 throw）：
+
+| 字段 | 含义 |
+|---|---|
+| `id` | 实现身份，全局唯一（包名是自然取值）；正文/标题坑位的 key |
+| `kind` | 类型判别名，`openTab(kind)` 点名对象；不唯一（extension 可接管 builtin）。内置：`guide`/`text`/`files` |
+| `patterns` | 可选资源地址 glob：含 `:` 匹配整个地址（`dsh-resource://file/**`）；不含的匹配 URI 路径任意深度（`*.md`）。页类型省略 |
+| `priority` | `extension`（缺省、最高）/ `builtin` / `fallback` |
+| `canOpen(address)` | 可选同步否决命中 |
+| `title(address)` | chip 文本，**打开时捕获一次**（活的标题靠标题 slot） |
+| `guide` | 可选引导页入口框 `{ order, title(), description?(), icon? }`；省略则不上引导页 |
+
+路由 = VS Code 编辑器解析器式排序认领：优先档 → 命中模式长度 → 注册顺序（tab-registry.ts；README §extension-seats）。
+
+**阶段二 · keyed 正文 slot**：`ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({ name:'sidebar.right.pane.tab', key: definition.id }, Body))`。可选同 key 注册 `sidebar.right.pane.tab.title`（活的 chip 标题）。坑位声明见 contract/slots.ts（`kind:'keyed'`、`scope:'session'`）。
+
+标准接线（内置 files 的源码即模板）：
+
+```ts
+export const inject = ['slots', 'locale', 'sidebarRightTabs', 'remote', 'remote.workspaceFiles']
+export function apply(ctx: ClientContext): void {
+  ctx.effect(() => ctx.sidebarRightTabs.register(filesDefinition(t)), 'files type')
+  const store = createFilesStore()
+  ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
+    { name: 'sidebar.right.pane.tab', key: FILES_ID, locale: NS, store, inject }, FilesBody)), 'files tab body')
+  ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab.title', () => ctx.slots.register(
+    { name: 'sidebar.right.pane.tab.title', key: FILES_ID }, FilesTitle)), 'files tab title')
+}
+// filesDefinition：
+{ id: '@deepseek-ai/dsh-client-ui-sidebar-files', kind: 'files', priority: 'builtin',
+  title: () => t('type.label'),
+  guide: [{ order: 10, title: () => t('guide.title'), description: () => t('guide.description'), icon: FolderSheetGlyph }] }
+```
+
+**正文拿到什么**：框架注入 `useTabInfo()` → `{ sidebar:{expanded, fullscreen}, panel:{id}, tab:{记录字段, visible, navigation, signal, actions} }`（tab-info.ts；标题与 guide 替换共享同一 hook）。`tab.actions` = 绑到本 tab 会话的 `openResource` / `openTab` / `close`；`signal` 在该记录消失或插件卸载时中止（切会话/隐藏不中止）；`navigation.params` 经声明合并表 `SidebarRightTabParamsMap`（按 kind）/ `SidebarRightResourceParamsMap`（按资源 type）定型，值 JSON 形状、运行时不校验（contract/params.ts）。
+
+### 1.4 四个扩展 slot
+
+```
+rightbar
+└─ rightbar.session
+   ├─ sidebar.right.pane.tab       # keyed by 定义id，会话作用域 —— tab 正文
+   │  └─ sidebar.right.tab.guide   # chain —— 整页替换引导 tab 正文（不替换 tab）
+   ├─ sidebar.right.pane.tab.title # keyed by 定义id —— chip 活标题
+   └─ sidebar.right.tab.menu.item  # list —— 右键菜单内容级动作（必须调 owner.dismiss()）
+```
+
+（声明与 owner props：contract/slots.ts；树：slots.md:165-172）
+
+- 正文/标题按「kind 生效实现的 `id`」分发：停靠或浮窗的每个该 kind tab 都送到同一注册者；某 kind 无生效实现时渲染「无法查看此内容」提示。
+- 菜单项：注册顺序排列，追加在 kit 自身布局动作之后；「执行了动作的条目必须调用 owner 的 `dismiss()`」，否则菜单浮在内容上。这是插件在框架层能参与的第二种“排列”——每个 tab 的右键动作列表。
+- 引导替换（chain）：第一个不拒绝的条目接管正文，否则渲染自带引导（GuideBody.tsx）。
+
+### 1.5 导航 `ctx.sidebarRight`
+
+- `openResource(address, options?)`：开 `dsh-resource://` 地址（会话区文件链接、工具行行号引用、文件树行）。
+- `openTab(kind, options?)`：开页（tab 条添加控件、引导入口框、插件自调）。
+- options：`paneId`（落指定格）、`replaceTab`（占位并同一步关旧 tab）、`revealIfOpened`（缺省 true：聚焦已开同 (kind, address) 的 tab）、`params`。
+- 其余：`close(tabId)` / `active()` / `isExpanded()` / `toggleExpanded()` / `focus()` / `split(paneId?)` / `float(tabId, rect?)` / `dock(paneId)`；无已挂载会话面时写操作 throw。
+- 打开四步 = 一条历史：认领 → 聚焦已有 → 落新 tab → 展开整列（折叠的列同一展开：用户看不见的内容不算打开）。
+- 落位永远是**调用方选项**，不是类型的属性（sidebar-right.zh.md §导航）。
+
+### 1.6 引导页的排列语义（框架自带的“排列样例”）
+
+内置 `guide` 类型（builtin，`openTab('guide')`）：一枚弱化的罗盘 + 各已注册类型贡献的**入口胶囊**，按 `guide[].order` 升序排列、正文居中（GuideBody.tsx：罗盘 56px hero，每个胶囊 = 图标(22/26px) + 标题，≤4 个条目时才显示 description，更多则全去掉）。点选胶囊 = `tab.actions.openTab(entry.kind, { replaceTab: true })` —— **引导页是门而不是常驻页**。每个 pane 最多一个引导 tab；tab 条添加控件只在该 pane 没有引导时出现（README §the-guide）。默认页：恰一个引导入口 → 直接开该页（随包组合中为 files）；0 或多入口 → 引导页（contract/seed.ts）。
+
+### 1.7 分栏（pane）里的胶囊：容量与排列（源码：TabPanel.tsx:257-408、dockkit.module.css:156-433、engine/geometry.ts:105）
+
+**没有数量上限，按宽度排 + 带滚出态横向滚动；不换行、不加「溢出张」、不省略标题。**
+
+- tab 条从左到右的排列（`TabPanel` 渲染顺序）：`.stripTabs`（所有 chip 的盒子）→ `.addTab`「+」（28px，仅当 pane 无引导 tab 时出现）→ `.stripFill`（`flex:1` 先吃自由空间，把短缺全留给 chip 盒）→ 分栏控件（28px）→ `.stripChrome`（右上角 pane 专属的面料，28px）。chip 盒是**唯一可收缩部分**（`flex:0 常敲 1 auto; min-width:0; overflow-x:auto`），之后的产物全部 `flex:none`。
+- 单块 chip：`.tab { flex:0 1 auto; min-width:80px; max-width:170px; padding:0 10px; white-space:nowrap; overflow:hidden }` → **最小足印 100px**（＝`SPLIT_MINIMUMS.chip=100`，geometry.ts:105，measure.ts 读渲染后的 minWidth+padding 复核）。chip 之间 `.slot` 盒 10px + tab 条 `gap:4px`。
+- **没有数量上限**：`TabPanel.tsx:259` 直接 `pane.tabs.map(...)` 渲染全部剥离；`openTab` 引擎侧只 append 不钳制（planner.ts:182），无任何 maxTabs 守卫。
+- 溢出：`.stripTabs { overflow-x:auto; scrollbar-width:none }`（不画滚动条）+ `data-dockkit-strip-scroll` 对隐藏侧做 24px 渐隐（mask-image）+ 自动把活动 chip 滚入可视（`useActiveChipInView`，fills 24px `STRIP_FADE`）+ 标题溢出只 fade 16px（不省略号）。
+- 浮窗例外：`host:'float'` 的 pane 容量 =1 tab（不画 tab 条）。
+
+> 实用公式：一个分栏可见胶囊数 ≈ ⌊(pane 宽 − 固定控件 ≈ 16px padding + 28px 加 + 28px 分栏 + chrome 28px 若有) ÷ (chip 100~190px + 10px slot + 4px gap)⌋；宽则多装、窄则少装，装不下的进横向滚动，不会换行或变成「溢出」列表。
+
+### 1.8 胶囊的排布、颜色与拖拽分组（源码：TabPanel.tsx、dockkit.module.css、engine/operations.ts、service.ts:390-401）
+
+**排布布局：库（dockkit）说了算，插件改不了几何。**
+- tab 条几何与样式由 dockkit 组件/CSS 固定；ui-sidebar-right 自己的 `SidebarRight.module.css:3` 明说「分裂树内部的一切都由 kit 样式负责」。
+- chip 顺序数据 = 引擎 `pane.tabs` 数组：新 tab 追加到条尾（planner.ts:182 `index: pane.tabs.length`，先开靠左、后开靠右）；同 `(kind, contentId)` 已开则聚焦不重复开。用户拖拽重排 = 意图 `reorderTab`（同 pane，operations.ts:291-297）/ `moveTab`（跨 pane，operations.ts:271-286）/ `dropTab`（zone，planner.ts）。
+- 插件能间接影响的只有：chip 内容（`renderTabTitle` → `sidebar.right.pane.tab.title` slot）、策略（`canAddTab`/`canCloseTab`）、打开落位（`openTab`/`openResource` 参数）；**不能**直接写 `pane.tabs` 顺序或 chip 宽度。
+
+**颜色：产品主题 token（`--dsw-*`），不是插件可配项。**
+- dockkit 只用语义变量：chip 文字 `--dsw-alias-label-secondary`；hover `--dsw-alias-interactive-bg-hover`；**活动胶囊填充 `--dsw-alias-markdown-tag`**（dockkit.module.css:377-380）；分隔腔细线 `--dsw-alias-border-l4`；拖放 caret/高亮 `--dsw-alias-brand-primary-new-colorprimary-new-color`。变量由主题层（ui-theme）定义，随浅/深主题切换。dockkit README §已知限制：不暴露主题 API，只读 `--dsw-*`。
+- 插件改 chip 颜色只能注入全局样式覆盖 hash 类名（hack，不推荐）；chip 内图标由 title slot 自绘、随当前文本色。
+
+**拖拽分组：pane 就是「组」，上限 2；没有文件夹式子分组。**
+- 支持：条内重排（slot caret 插入）；跨 pane 拖移；拖到 pane 边缘 → split 成新分栏（预算 2，service.ts:401 `dockPaneIds(layout).length >= 2` 拒绝第 3 个）；拖出停靠区 → 浮窗（容量 1 tab）；拖回 → 合并，空 pane 由 settle 自动并掉。
+- 不支持：tab 分组文件夹/折叠组、pin 固定、多选批量移动、tab 图标（deferred）、undo UI。要做「分组」，用 split（最多两栏）或浮窗当容器。
+
+### 1.9 关键边界（“不做”，sidebar-right.zh.md §不做）
+
+- 布局只在内存：不持久化，刷新即折叠，会话间不共享 tab。
+- `ctx.sidebarRight` 只暴露操作：**没有只读布局快照/订阅**、没有按地址 `find`、没有 `features`。
+- 标题只在打开时捕获；活的 chip 标题靠标题 slot。
+- `openResource` 最多点名一个 kind；文档渲染器由文件 tab 的工具栏选择。
+- 没有面向用户的 undo、内容导航栈、tab 图标（deferred）。
+
+---
+
+## 2. 插件实践（一手来源：dsh-plugins/ 三个自研工作台源码，逐文件核对）
+
+### 2.1 统一注册方式（三个插件同款组合拳）
+
+1. **标签类型注册**：`ctx.get("sidebarRightTabs").register({ id, kind, priority:"extension", title, guide }))` —— 在 **apply 顶层**调用（troubleshoot entry.ts:138-151、trading entry.ts:73-88、personal entry.ts:238-251）。注意三个插件都注释「**不进 effect**：注册表以 effect 托管子项，跨插件 apply 期间调用会卡死启动」（troubleshoot entry.ts:8-11、personal entry.ts:9-11）——这是对上游契约（register 放 ctx.effect）的本地适配，作为已知偏差记录。
+2. **正文注入**：`slots.inject("sidebar.right.pane.tab", () => slots.register({ name:"sidebar.right.pane.tab", key:<与 id 相同>, inject: () => ({}) }, PanelBody))`（troubleshoot entry.ts:166-172、trading entry.ts:90-94、personal entry.ts:271-275）。
+3. **启动自动打开**：注册后立即 `srt.openTab?.("<kind>")`（异常吞掉，用户仍可从引导页进入）。（troubleshoot entry.ts:150、trading entry.ts:95、personal entry.ts:250）
+4. **全屏增强**：面板内「⛶ 全屏」按钮 → 本地 `bus.open` 总线 → `slots.inject("shell.overlay")`（root 作用域）注册的 overlay + react-dom portal 到 body 顶层宿主（`twb-portal-host` / `pwb-portal-host`，`position:fixed;inset:0;z-index:100000;pointer-events:none`），渲染同一个 `Workbench` 组件（`inPane` 布尔区分两种面）。trading 另有旧壳回退分支：无 `sidebarRightTabs` 时退到 `sidebar.footer.action` 入口按钮 + `shell.overlay`（trading entry.ts:96-108）。
+
+其他事实：
+- `cordis.patch.yml` 只注册 **Host 侧插件行**（无 UI 条目）；右侧栏挂载**完全由 client 侧 entry.ts 代码完成**；三插件 `package.json` 均声明 `dsh.client.platform:"web"`，troubleshoot/personal 为 `dsh.client.inject: []`，trading 为 `["@deepseek-ai/dsh-client-ui-primitives", "@deepseek-ai/dsh-client-locale"]`（troubleshoot package.json:46-49、trading package.json:65-69、personal package.json:42-45）。
+- `exports.inject`：troubleshoot = `["slots","sidebarRightTabs"]`；trading/personal = `["slots","timer","sidebarRightTabs"]`（其中 `timer` 声明了但代码实际用 `window.setInterval` 自建轮询，近似装饰，trading entry.ts:55、ui-main.ts:59-65）。
+- **引导页 order 刻意错开**（注释见 trading entry.ts:81-82）：内置 files=10 → 个人工作台=20 → 故障排查=30 → 交易=40。
+- 未找到（如实声明）：三个插件均**未使用** `useTabInfo()`、导航 params、`sidebar.right.tab.menu.item`、`sidebar.right.pane.tab.title`。
+
+### 2.2 正文内部「排列方式」（tab 正文骨架树 + 证据）
+
+**dsh-troubleshoot-workbench**（信息架构注释 ui-main.ts:8-15；根容器 :681-685 `twb-root(tiled|fullscreen)`）：
+
+```
+twb-root
+├─ twb-topbar  标题/代码/健康点/版本/刷新/⛶全屏        ui-main.ts:332-345
+├─ twb-tabs    incidents|sources|query|docs|center|status（useState 切换） :348-355
+└─ twb-body（flex:1; overflow-y:auto，ui-shared.ts:177）                    :684
+   ├─ incidents → IncidentPanel（列表/建单/详情二级tab overview|timeline|evidence|reports|control）  incident-panel.ts:215
+   ├─ sources → 数据源卡片列表（twb-src 折叠表单，增删改/启用/脏标记）+ 全局默认 + 导入导出  ui-main.ts:386-439
+   ├─ query → Card「请求构建器」（select/方法/路径/KV参数/KV头/body） + Card「响应」（twb-result + pill）  :470-541
+   ├─ docs → twb-docbrowser [__sidebar 分组树/搜索 | __main 面包屑 + Markdown]（内部左右分栏）  ui-shared.ts:299-309
+   ├─ center → CenterPanel：会话轨迹/阶段派生/事件时间线/报告台账 各 Card   center-panel.ts:301-378
+   └─ status → 数据源状态表/插件配置表/健康/工具清单/SOP/报告归档 各 Card    ui-main.ts:623-663
+└─ twb-bottombar 版本·settings状态·数据源计数·刷新时间                       :674-679
+```
+
+- 骨架 = **纵向 flex 单列**：toolbar（固定顶）→ 下划线式内部 tabs → 可滚动 body（卡片堆叠：`twb-card` + `twb-card__head/__cnt/__sp`、`Pill`、`twb-table`、banner）→ bottombar；内部子标签是 `MainTab` 联合类型条件渲染，**不是框架 slot**。
+- 样式：**BEM 固定类名 `twb-*`**（非 CSS Modules），`CSS()` 字符串注入 `<style id="twb-style">`（ui-shared.ts:84-321，entry.ts:154-160）；charcoal 令牌（提取自 opscrew-veadk/agent-platform WebUI）；暗/浅色随 `body[data-ds-dark-theme]` 切换（ui-shared.ts:112）。
+- 数据：浏览器 `fetch` 打 Host 路由（/status /docs /reports /health 全量拉取 + 60s 静默轮询；session-timeline 3s 增量轮询带 sinceSeq 游标；事件表按 filter 重载）；数据源编辑走 `settingsScope`（namespace:"troubleshoot"，controller.ts:228-251）暂存→保存→回读。
+- 复杂度：client 7 文件共约 3152 行（ui-main 685 / controller 761 / incident-panel 622 / entry 197 / center-panel 379 / ui-shared 321 / markdown 187）。
+
+**dsh-trading-workbench**（ui-main.ts 头部注释；面板态骨架 :167-220）：
+
+```
+twb-root.twb-panel（container-type:inline-size，logic.ts:628）
+├─ twb-head  标题/徽章（会话·市场·净值·今日盈亏）/驾驶舱|学习中心|今日计划|⛶全屏|刷新  ui-main.ts:173-187
+└─ twb-scroll（flex:1; overflow:auto）                                          :215
+   ├─ (view==='learn') → LearningPanel（学习资料/知识卡片/笔记）                  ui-aux.ts:150-259
+   └─ (view==='cockpit')
+      ├─ twb-row3 [MarketPanel①市场思考 | CorePanel②自选+K线+回测 | PortfolioPanel③持仓]  ui-main.ts:192-202
+      ├─ RadarPanel    ④ 我的交易雷达                                           ui-cockpit.ts:116-129
+      ├─ DecisionPanel ⑤ 决策与风险管理（周期切换/解读/计划/下单）                  ui-cockpit.ts:250-481
+      ├─ JournalPanel  ⑥ 交易日志/今日复盘 + 盈利日历                            ui-aux.ts:64-145
+      └─ twb-hint      30秒原则状态行
+└─ (bus.open) FullscreenLayer（独立渲染同一驾驶舱，ui-main.ts:100-157、218）
+```
+
+- 排列特点：**头部 + 可滚动区**；面板态宽窄自适应靠**容器查询**——`@container (max-width:759px) 单列 / (min-width:760px) 三列 240px|minmax(0,1fr)|300px`（logic.ts:634-636）；面板态与全屏共用同一 `useCockpit()` 数据与渲染。
+- 样式：同样 `twb-*` 固定类名，CSS 定义在 logic.ts:578-685（`export const CSS`），Panel 挂载时 `<style>` 注入；配色硬编码常量 + 少量 `--dsw-alias-*` 主题变量。
+- 数据三层：localStorage 主存（`twb2.*`，mutate() → 写盘 → 通知 → 900ms 防抖推 Host）；Host 路由（/quote /rank /kline /board /search /learn /state /events，同路径并发合并 + 短 TTL 缓存 2–15s + 3 次退避重试）；**SSE 事件推送**（EventSource /events 只收 revision 失效信号、按需拉 /state）——三个中唯一用 SSE 的。面板内 MarketPanel 另 30s 轮询 /board。
+- 复杂度：client 11 文件，核心 7 文件约 1921 行 + chart.ts 322 + logic.ts 686。
+
+**dsh-personal-workbench**（view-types.ts:3-11 头注释「三纵两横」；根容器 ui-main.ts:633-638）：
+
+```
+pwb-root(tiled)（container-type:inline-size；--pwb-zoom/--pwb-left-w/--pwb-right-w CSS 变量下发）
+├─ pwb-top  标题/主线/焦点/模型/会话·归档计数/字号/搜索/刷新/⛶全屏    ui-main.ts:640-666
+├─ pwb-body（三纵）                                                  :669
+│  ├─ pwb-left | pwb-tab.left（折叠条）                               :670-672
+│  │   └─ pwb-col: 日历/日记/系统/软件/工具/skills/知识库 各 pwb-card section（CollapseHeader 折叠）  LeftPane :802-999
+│  ├─ pwb-gutter（拖动条，宽度持久化 localStorage）                     :688-693
+│  ├─ pwb-center
+│  │   ├─ CenterPane: workspace-head + 卡片（资源消耗/会话轨迹/文件·skill·日历查看器/硬搜索）  :1233-1432
+│  │   └─ Composer 自研输入框（收集/总结/解释/新会话|当前会话）          :1051-1148
+│  ├─ pwb-gutter                                                      :734-739
+│  └─ pwb-right | pwb-tab.right（折叠条）                              :740-754
+│      └─ RightPane 会话档案（分组折叠：进行中/已完成/归档 + 标记 + 备注 + 落盘 dsh-kb）
+├─ pwb-bottom  标记统计/明细扫描进度/版本                               :757-761
+└─ pwb-modal-mask > pwb-modal 提示词模板编辑弹窗                        :764-794
+```
+
+- 排列特点：**上横杠 + 左/中/右三纵（可折叠、gutter 可拖、窄窗 <900px 强制展开）+ 下横杠**；分栏宽度与字号档 localStorage 持久化（ui-main.ts:55-58、:182-214）。
+- 框架辅助（三者中最多）：是唯一通过 **slotProps 标准属性**取值（`useSessions` / `useWorkspaces.archivedSessionIds` / `inputActions` / `sessionId`，entry.ts:102-152）并缓存进全屏总线（root 作用域拿不到会话作用域标准属性）的插件；另用 `sessions` 服务（create/open 新建会话）与 `modelDirectories`（读当前模型）。
+- 样式：`pwb-*` 固定类名，CSS 注入同上；配色走 **DSH 主题 token `--dsw-*`**（换主题/明暗即生效，缺失回退内置深色）。
+- 数据：Host 路由 + 3 组轮询周期（/state /env 30s；/kb/summary|tree|calendar 30s；/sessions 15s），选中会话才拉 /session-log /session-detail；无 SSE。
+- **插槽冲突教训（0.6.6 事故，entry.ts:15-24 头注释）**：本插件曾声明与核心同名的子插槽 `conversation.composer.bar`，导致「slot is already declared」、插件（甚至核心）加载失败——0.6.6 起不再声明任何与核心同名的子插槽。
+- 复杂度：client 9 文件，核心约 2818 行（ui-main 2132 / entry 296 / markdown 270 / view-types 222…）。
+
+### 2.3 对照表
+
+| 维度 | personal-workbench | troubleshoot-workbench | trading-workbench |
+|---|---|---|---|
+| kind / id | `personal-workbench` / `dsh-personal-workbench` | `troubleshoot-workbench` / `dsh-troubleshoot-workbench` | `trading-workbench` / `dsh-trading-workbench` |
+| guide order | 20 | 30 | 40 |
+| 自动打开 | 启动 openTab | 启动 openTab | 启动 openTab |
+| 正文骨架 | 上横杠 + 左/中/右三纵（可拖可折叠）+ 下横杠 | toolbar + 内部单列 tabs + 卡片堆叠 + bottombar | Header + 三列网格（窄→单列，容器查询）|
+| 内部视图切换 | viewer 状态机 + 会话选中 | 主 tab×6 + incident 详情二级 tab | view: cockpit/learn |
+| 样式 | `pwb-*` BEM + `--dsw-*` token | `twb-*` BEM（charcoal） | `twb-*`（CSS 在 logic.ts） |
+| 数据通道 | Host 路由轮询 + slotProps 标准属性 | Host 路由轮询 + settingsScope | localStorage + 短 TTL 缓存 + SSE 失效信号 |
+| 全屏 | shell.overlay + portal | shell.overlay + portal | shell.overlay + portal（+旧壳 footer 回退） |
+| 使用 useTabInfo / menu.item / title slot | 否（三插件均未用） | 否 | 否 |
+| client 规模 | ~2818 行（9 文件） | ~3152 行（7 文件） | ~1921 行核心（11 文件，另 chart/logic） |
+
+**对照参考（不使用右侧栏的插件）**：`dsh-global-auth` 不碰右侧边栏——它注册 `settings.plugin.item`（key=dsh-auth，设置页「全局登录」卡片，admin-console.ts:651-684）与 `sidebar.footer.action`（左侧栏底部「登录用户」chip，user-chip.ts:5-6），是「设置页卡片 + 左侧栏 footer」路径与右侧边栏标签体系的对照（src/client/entry.ts:96-107）。
+
+---
+
+## 3. 可用「排列方式」清单（给后续插件作者）
+
+| 排列诉求 | 怎么做 | 边界 |
+|---|---|---|
+| 把内容放进右侧边栏 | 两阶段注册 tab 类型（静态定义 + keyed 正文 slot） | 一个 id 全局唯一；kind 可被 extension 接管 |
+| 给内容一个引导入口 | 定义里 `guide:[{order, title, description?, icon?}]` | order 全局升序；≤4 条目显示 description |
+| 一个 tab 内排多个视图 | 正文内自己做内部 tabs / 卡片堆叠 / 多栏（flex/grid + 容器查询） | 框架不提供正文内嵌套停靠；正文溢出自行滚动 |
+| 需要两个面并行 | `ctx.sidebarRight.split()` 或用户拖 chip 分栏（≤2 格） | 20%–80% 分隔条；格太窄禁用 |
+| 内容要更宽 | tab 内「⛶ 全屏」→ `shell.overlay` + portal（现状实践）；或 `ctx.layout.openRightbar(track, fullscreen)` | 全屏覆盖窗口；可配 DSH 自带面板控件 |
+| 打开某 tab/资源 | `ctx.sidebarRight.openTab(kind, {params})` / `openResource(addr)`；正文内 `tab.actions.*` | params 用声明合并表定型；JSON 形状 |
+| 右键菜单加内容级动作 | `sidebar.right.tab.menu.item`（list） | 必须调 owner `dismiss()` |
+| 活的 chip 标题 | `sidebar.right.pane.tab.title`（同 key） | 与正文同 key 注册 |
+| 整页替换引导页 | `sidebar.right.tab.guide`（chain） | 第一个不拒绝的条目接管 |
+| 读文件等资源 | `useResource(address)` + `ctx.resources.register(provider)` | `dsh-resource://<type>/…` 自定义协议要插件自己注册 provider |
+| 正文读会话/输入 | slotProps 标准属性（`useSessions`/`inputActions`/`sessionId`…） | 会话作用域才有；全屏（root 作用域）需面板捕获后透传 |
+
+## 4. 建议（针对本工作区）
+
+1. **正文布局是插件的自由区，也是重复区**：三个工作台各写了千余行 UI。若要收敛，可抽一个共享「右侧栏正文骨架」公共模块（顶部栏 + 内部 tabs + 卡片 + 状态条），避免三处重复实现。
+2. **useTabInfo / 导航 params / 标题 slot / 菜单 item 这四个框架能力目前零使用**：`tab.actions.openTab(…, {params})` 和 `navigation` 是白送的框架能力，工作台将来若支持「从会话区入口带参打开（如定位到某数据源/某标的）」可从这里接入，比自建 bus 优雅；`sidebar.right.pane.tab.title` 可让 chip 标题活起来（如显示当前选中标的）。
+3. **引导页 order 已排好**：files=10 / personal=20 / troubleshoot=30 / trading=40（trading entry.ts:81-82 的既定约定），新增插件按档位插入。
+4. **两处已知偏差需在升级 harness 时回归验证**：① 三个插件把 `sidebarRightTabs.register` 放 apply 顶层而非 `ctx.effect`（注释称跨插件 apply 期调用会卡死启动）；② 正文注册用空注入面 `inject: () => ({})`，未利用框架注入的 `useTabInfo` 等能力。
+5. **插槽冲突红线**：插件禁止声明与核心同名的子插槽（`conversation.composer.bar` 等），0.6.6 曾致加载失败（personal entry.ts:15-24）；新插件先查 docs/subsystems/slots.md 的 slot 树再声明。
+6. 多插件共享同一列用 `openTab(kind)` 即可——kind 是插件间契约；未注册的 kind openTab 会 throw（接线错误），应显式兜底。
+
+---
+
+## 5. 附：一手来源清单（证据）
+
+- docs/subsystems/sidebar-right.zh.md（全文 148 行）：子系统契约（地址/tab 类型注册/导航/slot/资源模型/内置类型/不做）。
+- packages/client/ui-sidebar-right/README.zh.md（§呈现形态/扩展席位/ctx.sidebarRight/引导页）＋ src/client/tab-registry.ts（定义/路由/guide 入口）＋ src/client/contract/slots.ts（4 slot 声明与 owner props）＋ src/client/contract/params.ts（params 映射）＋ src/client/tab-info.ts（useTabInfo）＋ src/client/contract/seed.ts（默认页）＋ src/client/tabs/guide/GuideBody.tsx（引导页排列实现）。
+- packages/client/ui-dockkit/README.zh.md（布局引擎/交互规则）＋ Agent Note .agents/notes/implemented/feature/2026-09-04-right-sidebar-docking-infrastructure.zh.md（决策、边界、Consequences）。
+- packages/client/ui-sidebar-files/src/client/index.ts + definition.tsx（内置插件走同一条公开路径的模板）。
+- docs/subsystems/slots.md（150-180 行 slot 层级树）。
+- dsh-plugins/dsh-troubleshoot-workbench：entry.ts（107-190）、ui-main.ts（1-16、332-355、623-685）、ui-shared.ts（22-43、84-321）、controller.ts、incident-panel.ts、center-panel.ts、package.json（46-49）、cordis.patch.yml。
+- dsh-plugins/dsh-trading-workbench：entry.ts（53-108）、ui-main.ts（1-30、100-220）、logic.ts（578-686）、store.ts（8-252）、ui-core.ts、ui-cockpit.ts、ui-aux.ts、agent-bridge.ts、package.json（65-69）、cordis.patch.yml。
+- dsh-plugins/dsh-personal-workbench：entry.ts（1-100、102-152、214-297）、ui-main.ts（1-40、633-794、802-999、1233-1432）、view-types.ts（3-11）、file-view.ts、view-types、package.json（42-45）、cordis.patch.yml。
+- dsh-plugins/dsh-global-auth（对照）：src/client/entry.ts（9-13、96-107）、admin-console.ts（651-684）、user-chip.ts（5-6）。
+
+---
+
+## 6. 当前 3082 侧边栏盘点与重组方案
+
+### 6.1 当前安装依据
+
+盘点依据是 `~/.dsh-dev/profiles/web/package.json` 的 `dsh.profile.bundles` 与已安装包源码；不是仅按工作区目录推测。当前 profile 安装了 `dsh-better-sidebar`、`dsh-personal-workbench`、`dsh-audio-transcriber`、`dsh-troubleshoot-workbench`、`dsh-trading-workbench`、`dsh-global-auth`、`dsh-scheduled-send`、`dsh-qwen38-gateway-compaction` 等插件。
+
+其中真正向原生右侧 Sidebar 注册 tab 的内容如下：
+
+| 引导顺序 | 胶囊 / kind | 来源 | 当前作用 |
+|---:|---|---|---|
+| 10 | Files / `files` | `dsh-better-sidebar` | 以 extension 注册接管内置 `files`，显示 Explorer；内置 Files 被 shadow |
+| 20 | 个人工作台 / `personal-workbench` | `dsh-personal-workbench` | 个人状态、会话、知识库、文件与工作区 |
+| 20 | 语音转文字 / `audio-transcriber` | `dsh-audio-transcriber` | faster-whisper 音频转写 |
+| 20 | Git / `git` | `dsh-better-sidebar` | Git 工作区、变更、提交等 |
+| 30 | 故障排查工作台 / `troubleshoot-workbench` | `dsh-troubleshoot-workbench` | 数据源、查询、文档、状态、SOP、报告 |
+| 30 | Subagent / `subagent` | `dsh-better-sidebar` | 子代理视图 |
+| 35 | Side Chat / `sidechat` | `dsh-better-sidebar` | 侧边聊天 |
+| 40 | 交易工作台 / `trading-workbench` | `dsh-trading-workbench` | 行情、持仓、决策、复盘、学习 |
+| 40 | Terminal / `terminal` | `dsh-better-sidebar` | 终端 |
+| 50 | Browser / `browser` | `dsh-better-sidebar` | 浏览器 |
+
+另有两类不一定显示为引导胶囊的内容：
+
+- `dsh-better-sidebar` 的 `editor` 类型以 `extension` 优先级认领 `dsh-resource://file/**`，所以文件资源优先进入其 Editor；它没有单独 guide，避免和 Files 重复。
+- `dsh-better-sidebar` 的 `diff` 类型是 `hidden: true`、`order: -1`，按需打开，不进入引导页。
+- 内置 `text` 仍是 fallback，但普通文件资源会被 better-sidebar 的 `editor` 优先认领。
+- `dsh-global-auth` 不进右侧栏，只注册设置页卡片与左侧栏 footer；`dsh-scheduled-send`、`dsh-qwen38-gateway-compaction` 等当前盘点中未发现右侧 Sidebar tab 注册。
+
+**当前引导页有 10 个胶囊。** 由于框架只在条目不超过 4 个时显示 description，当前页面基本只显示标题，没有真正的功能分组标题。并且 `order=20/30/40` 都存在并列项，三个工作台会被 audio、Git、Subagent、Terminal 等内容穿插。
+
+### 6.2 目标与框架约束
+
+目标是「三个工作台入口集中，并按功能分区」。原生 Sidebar 当前不支持胶囊文件夹、组标题、颜色分组或持久化组。仅调整 `guide.order` 只能改变扁平排序，不能形成真正的分组；已打开的 tab 顺序也只在当前会话内存中存在。
+
+因此“把三个工作台放一起”应通过一个**聚合入口页**实现，而不是继续堆叠 guide 胶囊。
+
+### 6.3 推荐方案：新增“工作台枢纽”聚合页
+
+新增一个轻量的 `workbench-hub` tab 类型，建议作为独立插件或合并进个人工作台的薄 UI 层：
+
+```
+引导页
+├─ Files（better-sidebar Explorer）
+├─ 工作台（Workbench Hub）
+├─ Git
+├─ Subagent
+├─ Side Chat
+├─ Terminal
+├─ Browser
+└─ 语音转文字（可放到“工具”位置）
+
+工作台 Hub 正文
+├─ 日常工作
+│  └─ 个人工作台：会话 / 知识库 / 文件 / 个人状态
+├─ 运维与工程
+│  └─ 故障排查：数据源 / 查询 / 调用链 / 日志 / 变更 / 报告
+└─ 交易研究
+   └─ 交易工作台：行情 / 持仓 / 决策 / 复盘 / 学习
+```
+
+实现方式：
+
+1. Hub 注册 `kind: 'workbench-hub'`，设置一个排在 Files 之后的 guide order，例如 `12`。
+2. Hub 正文使用三组功能卡片，不需要改动 dockkit；点击卡片调用 `tab.actions.openTab('personal-workbench')`、`tab.actions.openTab('troubleshoot-workbench')`、`tab.actions.openTab('trading-workbench')`。
+3. 三个工作台继续保留独立 tab 和独立正文，不把三个大型 UI 强行合并成一个组件。
+4. 推荐移除三个工作台自身的 `guide` 入口，只保留 Hub 入口，避免引导页出现重复入口；`openTab(kind)` 仍然可以打开它们。
+5. `audio-transcriber` 作为“工具”保留独立入口，或者后续纳入一个更大的“工具箱”Hub，不应混入工作台功能组。
+
+### 6.4 低改动方案：只调整 guide order
+
+如果暂时不新增 Hub，可以把三个工作台的顺序集中到 better-sidebar 第一组之后，例如：
+
+```text
+Files       10
+Personal    11
+Troubleshoot 12
+Trading     13
+Git         20
+Subagent    30
+Side Chat   35
+Terminal    40
+Browser     50
+Audio       60
+```
+
+这个方案只能让三枚胶囊相邻，不能显示组标题，也不能解决胶囊数量多、无 description 的问题；它适合作为临时整理，不适合作为最终信息架构。
+
+### 6.5 建议的落地顺序
+
+1. 先新增 Hub 原型，只做三张入口卡片和打开动作，不改变现有工作台正文。
+2. 验证 Hub 可以稳定打开三个原有 kind，并确认同一会话中 tab 去重和落位行为。
+3. 将三个工作台的 guide 入口收敛到 Hub；保留它们的 `sidebarRightTabs.register`，但删除各自的 `guide` 字段。
+4. 将 `audio-transcriber` 与工作台入口分离到“工具”位置；必要时把 order 调到 60。
+5. 重新构建并刷新 3082，检查引导页从 10 个胶囊减少为更少的功能入口。
+
+### 6.6 需要用户拍板的选择
+
+- **推荐**：新增“工作台枢纽”，三个工作台取消独立 guide 胶囊；工作台在 Hub 内按“日常 / 运维工程 / 交易研究”分区。
+- **保守**：只调整 guide order，不新增插件；三个工作台仍是独立胶囊，但连续排列。
+- **不建议**：把三个大型工作台迁移到 `dsh-better-sidebar` 的内部 tab 注册体系；这会引入第三方侧栏 API 耦合，且丢失现有三个插件的独立生命周期。

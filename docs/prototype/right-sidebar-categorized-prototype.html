@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>dsh-sidebar-hub 原型：右侧栏 = 分类框架（起始页）</title>
+<style>
+  :root {
+    --bg: #101114; --bg-l1: #17181c; --bg-l2: #1e2025; --border: #2a2d34;
+    --text: #e6e6e6; --text-2: #9ca3af; --text-3: #6b7280;
+    --accent: #4f8cff; --ok: #4ade80; --warn: #fbbf24; --err: #f87171;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0b0e; color:var(--text); font:13px/1.5 "PingFang SC","Microsoft YaHei",sans-serif; display:flex; justify-content:center; padding:24px; }
+  .app { width:1180px; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--bg); display:flex; min-height:660px; }
+  /* ── 会话区 ── */
+  .main { flex:1; display:flex; flex-direction:column; min-width:0; }
+  .main .conv { flex:1; padding:24px; color:var(--text-3); border-right:1px solid var(--border); }
+  .main .conv h2 { color:var(--text); font-size:15px; margin-bottom:8px; }
+  .bubble { background:var(--bg-l1); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px; color:var(--text-2); max-width:70%; }
+  .bubble.user { margin-left:auto; background:#1c2740; border-color:#2a3a5c; }
+  /* ── 右侧栏 ── */
+  .sidebar { width:440px; background:var(--bg-l1); display:flex; flex-direction:column; min-width:0; }
+  /* 顶部 tab 条：原生 chip（已打开的插件内容在这里，无法分组——框架边界） */
+  .tabbar { display:flex; gap:4px; align-items:center; padding:8px 10px 0; border-bottom:1px solid var(--border); background:var(--bg); }
+  .chip { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:8px; font-size:12px; color:var(--text-2); background:var(--bg-l1); border:1px solid var(--border); cursor:pointer; }
+  .chip.active { background:#22304d; color:var(--text); border-color:#3b5a9e; }
+  .chip .x { color:var(--text-3); font-size:10px; }
+  .add { width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-3);border:1px dashed var(--border);border-radius:6px; }
+  .tabbar-hint { margin-left:auto; font-size:11px; color:var(--text-3); padding-right:4px; }
+  /* ── 起始页 = 分类框架 ── */
+  .catalog { flex:1; overflow-y:auto; padding:12px 12px 20px; }
+  .catalog-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .catalog-head h1 { font-size:15px; }
+  .catalog-head .hint { font-size:11px; color:var(--text-3); }
+  .catalog-head .btn { margin-left:auto; font-size:12px; color:var(--text-2); background:var(--bg-l2); border:1px solid var(--border); border-radius:6px; padding:2px 8px; cursor:pointer; }
+  .group { margin-bottom:14px; border:1px solid var(--border); border-radius:10px; background:var(--bg-l1); overflow:hidden; }
+  .group-title { display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12px; font-weight:600; color:var(--text-2); background:var(--bg); border-bottom:1px solid var(--border); }
+  .group-title .caret { color:var(--text-3); font-size:10px; }
+  .group-title .cnt { font-size:11px; color:var(--text-3); background:var(--bg-l2); border-radius:8px; padding:0 6px; }
+  .group-title .g-actions { margin-left:auto; font-size:11px; color:var(--text-3); }
+  .items { display:flex; flex-wrap:wrap; gap:8px; padding:10px 12px; }
+  .item { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:8px; font-size:12px; color:var(--text); background:var(--bg-l2); border:1px solid var(--border); cursor:pointer; user-select:none; }
+  .item:hover { border-color:var(--accent); background:#20293d; }
+  .item.fwd::after { content:"↗"; font-size:10px; color:var(--text-3); }
+  .item.ext::after { content:"⬡"; font-size:10px; color:var(--text-3); }
+  .note { font-size:11px; color:var(--text-3); margin-top:10px; border-top:1px dashed var(--border); padding-top:10px; }
+  .note b { color:var(--warn); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="main">
+    <div class="conv">
+      <h2>会话区（主对话）</h2>
+      <div class="bubble user">打开右侧栏看下最新的工作台分类</div>
+      <div class="bubble">好的，右侧栏默认就是分类起始页，你要的终端/Git/工作台都按分组列好了。</div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <!-- 顶部：原生 tab 条（已打开的内容，并行切换） -->
+    <div class="tabbar">
+      <span class="chip active">📄 文件 <span class="x">✕</span></span>
+      <span class="chip">💻 终端 <span class="x">✕</span></span>
+      <span class="chip">🔀 文件变动 <span class="x">✕</span></span>
+      <span class="add">＋</span>
+      <span class="tabbar-hint">← 已打开内容（原生 tab，框架固定无法分组）</span>
+    </div>
+
+    <!-- 起始页 = 分类框架（打开右侧栏直接看到） -->
+    <div class="catalog">
+      <div class="catalog-head">
+        <h1>🔧 工作台</h1>
+        <span class="hint">起始页 · 条目 = 各插件，按类分组，可拖拽</span>
+        <span class="btn">＋新分组</span>
+        <span class="btn">⟲恢复默认</span>
+        <span class="btn">⛶ 全屏(整个DSH)</span>
+      </div>
+
+      <div class="group">
+        <div class="group-title"><span class="caret">▾</span> 工作台 <span class="cnt">3</span><span class="g-actions">✎ ✕</span></div>
+        <div class="items">
+          <span class="item fwd">🧑 个人工作台</span>
+          <span class="item fwd">🔧 故障排查工作台</span>
+          <span class="item fwd">📈 交易工作台</span>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title"><span class="caret">▾</span> 工程与任务 <span class="cnt">5</span><span class="g-actions">✎ ✕</span></div>
+        <div class="items">
+          <span class="item ext">✅ 任务管理</span>
+          <span class="item ext">🧩 Subagent</span>
+          <span class="item ext">💻 终端</span>
+          <span class="item ext">🌿 Git</span>
+          <span class="item ext">🔀 文件变动</span>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title"><span class="caret">▾</span> 浏览与工具 <span class="cnt">4</span><span class="g-actions">✎ ✕</span></div>
+        <div class="items">
+          <span class="item ext">🌐 浏览器</span>
+          <span class="item fwd">🎙 语音转文字</span>
+          <span class="item fwd">🔊 文字转语音</span>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title"><span class="caret">▾</span> 官方文件 <span class="cnt">1</span><span class="g-actions">✎ ✕</span></div>
+        <div class="items">
+          <span class="item fwd">📄 文件（官方，仅转发不接管）</span>
+        </div>
+      </div>
+
+      <div class="note">
+        <b>交互说明：</b>
+        · 打开右侧栏 → 直接看到上面的分组起始页（不额外套一层"工作台"标签）<br>
+        · 点条目 → 打开对应插件内容，出现在顶部原生 tab 条（如 终端/Git），可并行切换<br>
+        · 条目可拖到其他分组、组内排序；分组可增删改/折叠/恢复默认；布局按会话持久化<br>
+        · 「↗」= 转发打开现有插件（个人/故障/交易/语音/文字转语音/文件）；「⬡」= 由本插件提供内容（终端/任务/Git/文件变动/Subagent/浏览器）<br>
+        · 顶部 tab 条是框架固定渲染，无法分组（边界）；分组发生在起始页
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

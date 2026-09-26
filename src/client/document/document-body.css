@@ -1,0 +1,17 @@
+/* 文档渲染器（dsh-sidebar-hub）：md 错误/加载 + office 加载/错误。 */
+
+.hubMarkdownError,
+.hubOfficeError {
+  padding: 12px 16px;
+  font-size: var(--dsw-font-xs-13, 13px);
+  color: var(--dsw-alias-state-error-primary, #dc2626);
+  background: var(--dsw-alias-state-error-primary, rgba(220, 38, 38, 0.12));
+  border-radius: 4px;
+  margin: 8px;
+}
+
+.hubOfficeLoading {
+  padding: 12px 16px;
+  font-size: var(--dsw-font-xs-13, 13px);
+  color: var(--dsw-alias-label-secondary-foreground, #777);
+}

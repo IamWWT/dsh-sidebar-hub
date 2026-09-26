@@ -1,0 +1,316 @@
+/*
+ * 分类框架（右侧栏起始页）样式：分组 + 条目卡片。
+ * 全部消费 --dsw-* token（禁写死色值）；每个分组带 data-tone，把
+ * `--hub-tone` 绑到对应的语义色，用于左侧色条、圆点、计数胶囊与条目图标块。
+ */
+
+.catalogGroup[data-tone='brand'] { --hub-tone: var(--dsw-alias-brand-primary); }
+.catalogGroup[data-tone='business'] { --hub-tone: var(--dsw-alias-state-business-primary); }
+.catalogGroup[data-tone='success'] { --hub-tone: var(--dsw-alias-state-success-primary); }
+.catalogGroup[data-tone='warn'] { --hub-tone: var(--dsw-alias-state-warn-primary); }
+.catalogGroup[data-tone='error'] { --hub-tone: var(--dsw-alias-state-error-primary); }
+.catalogGroup[data-tone='neutral'] { --hub-tone: var(--dsw-alias-label-tertiary); }
+
+.hubCatalog {
+  /* paneBody 是块级滚动容器：flex:1 不生效，必须显式 height:100% */
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 10px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.catalogHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 2px 0;
+}
+
+.catalogTitle {
+  flex: 1;
+  /* 与 DSH 面板标题同档（16px 正文尺度），不再用 14px 显得比全局小 */
+  font: var(--hub-font-title);
+  color: var(--dsw-alias-label-primary);
+}
+
+.catalogTitle::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--dsw-alias-brand-primary);
+  vertical-align: 2px;
+}
+
+.catalogActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.catalogBtn {
+  padding: 3px 9px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary);
+  font: var(--hub-font-tiny-strong);
+  cursor: pointer;
+}
+
+.catalogBtn:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.catalogGroup {
+  --hub-tone: var(--dsw-alias-label-tertiary);
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-left: 3px solid var(--hub-tone);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-1);
+  overflow: hidden;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.catalogGroup:hover {
+  border-color: var(--dsw-alias-border-l2);
+  border-left-color: var(--hub-tone);
+}
+
+.catalogGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 9px 11px;
+  border: none;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font: var(--hub-font-body-strong);
+  text-align: left;
+  cursor: pointer;
+}
+
+.catalogGroupHead:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.catalogCaret {
+  flex: none;
+  width: 12px;
+  color: var(--hub-tone);
+  font-size: 10px;
+}
+
+/* 分组圆点：一眼分色 */
+.catalogGroupHeadRow .catalogGroupHead::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--hub-tone);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hub-tone) 18%, transparent);
+}
+
+.catalogGroupTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalogCount {
+  flex: none;
+  min-width: 16px;
+  height: 15px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--hub-tone) 16%, transparent);
+  color: var(--hub-tone);
+  font: var(--hub-font-micro-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.catalogItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 9px 11px 11px;
+}
+
+.catalogItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 5px 11px 5px 6px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 9px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-primary);
+  font: var(--hub-font-small);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+
+.catalogItem:hover {
+  border-color: var(--hub-tone);
+  background: var(--dsw-alias-interactive-bg-hover);
+  transform: translateY(-1px);
+}
+
+.catalogItem:focus-visible {
+  outline: 2px solid var(--hub-tone);
+  outline-offset: 1px;
+}
+
+/* 条目图标块：分组的语义色 + 首字，纯装饰 */
+.catalogItemTile {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--hub-tone) 18%, transparent);
+  color: var(--hub-tone);
+  font: var(--hub-font-tiny-strong);
+  line-height: 1;
+}
+
+/* 官方条目：用品牌色描边点出来，而不是只靠一个灰标签 */
+.catalogItem[data-official='true'] {
+  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 45%, var(--dsw-alias-border-l1));
+}
+
+.catalogItemLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalogItemOfficial {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);
+  color: var(--dsw-alias-brand-primary);
+  font: var(--hub-font-tiny);
+}
+
+.catalogEmpty {
+  padding: 4px 2px;
+  font: var(--hub-font-tiny);
+  color: var(--dsw-alias-label-tertiary);
+}
+/* ── T4：分组头工具、重命名输入框、拖拽落点、底部新建 ───────────────────── */
+
+.catalogGroupHeadRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--dsw-alias-bg-base);
+}
+
+.catalogGroupTools {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 6px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.catalogGroupHeadRow:hover .catalogGroupTools,
+.catalogGroupHeadRow:focus-within .catalogGroupTools {
+  opacity: 1;
+}
+
+.catalogIconBtn {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  font: var(--hub-font-tiny);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.catalogIconBtn:hover {
+  border-color: var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.catalogGroupInput {
+  flex: 1;
+  min-width: 0;
+  padding: 1px 5px;
+  border: 1px solid var(--dsw-alias-brand-primary);
+  border-radius: 5px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-primary);
+  font: var(--hub-font-tiny-strong);
+  outline: none;
+}
+
+/* 拖拽经过分组：整组高亮 */
+.catalogGroup[data-drop='true'] {
+  border-color: var(--dsw-alias-brand-primary);
+  border-left-color: var(--dsw-alias-brand-primary);
+  box-shadow: inset 0 0 0 1px var(--dsw-alias-brand-primary);
+}
+
+/* 拖拽经过条目：该条目左侧插入线 */
+.catalogItem[data-drop='true'] {
+  border-color: var(--dsw-alias-brand-primary);
+  box-shadow: inset 2px 0 0 0 var(--dsw-alias-brand-primary);
+}
+
+.catalogItem:active {
+  cursor: grabbing;
+}
+
+.catalogFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px;
+}
+
+.catalogHint {
+  font: var(--hub-font-tiny);
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.catalogWarn {
+  padding: 0 5px;
+  border-radius: 4px;
+  border: 1px solid var(--dsw-alias-state-warn-primary);
+  color: var(--dsw-alias-state-warn-primary);
+  font: var(--hub-font-tiny);
+  cursor: help;
+}
+
+.catalogTerminal { display: flex; gap: 3px; align-items: center; }

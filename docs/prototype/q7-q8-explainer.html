@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Q7 实现路径 / Q8 条目来源 —— 图解确认</title>
+<style>
+  :root{--bg:#0f1013;--card:#17181c;--card2:#1e2025;--bd:#2a2d34;--tx:#e6e6e6;--tx2:#9ca3af;--tx3:#6b7280;--ok:#4ade80;--err:#f87171;--ac:#4f8cff;--warn:#fbbf24;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#08090b;color:var(--tx);font:13px/1.6 "PingFang SC","Microsoft YaHei",sans-serif;padding:28px}
+  h1{font-size:20px;margin-bottom:6px}
+  .sub{color:var(--tx3);font-size:12px;margin-bottom:24px}
+  h2{font-size:16px;margin:28px 0 6px;padding-top:18px;border-top:1px solid var(--bd)}
+  h2 .tag{font-size:11px;font-weight:400;color:var(--tx3);background:var(--card2);border:1px solid var(--bd);border-radius:6px;padding:2px 8px;margin-left:8px}
+  .lead{color:var(--tx2);margin-bottom:14px;font-size:12.5px}
+  .row{display:flex;gap:16px;align-items:stretch;margin-bottom:14px}
+  .col{flex:1;border:1px solid var(--bd);border-radius:10px;background:var(--card);overflow:hidden;display:flex;flex-direction:column}
+  .col.bad{border-color:#5b2b2b}
+  .col.good{border-color:#2b5b3a}
+  .col-head{padding:8px 12px;font-size:12.5px;font-weight:600;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px}
+  .col.bad .col-head{background:#25161a;color:#fca5a5}
+  .col.good .col-head{background:#12241a;color:#86efac}
+  .col-body{padding:12px;flex:1}
+  .mini{border:1px solid var(--bd);border-radius:8px;background:#101114;overflow:hidden}
+  .mini .bar{display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid var(--bd);background:#0c0d10;align-items:center}
+  .chip{font-size:10.5px;padding:2px 7px;border-radius:6px;background:var(--card2);border:1px solid var(--bd);color:var(--tx2)}
+  .chip.hl{background:#22304d;border-color:#3b5a9e;color:#dbeafe}
+  .mini .body{padding:8px;font-size:11px;color:var(--tx2);min-height:104px}
+  .flat{display:flex;flex-wrap:wrap;gap:5px}
+  .cap{font-size:10.5px;padding:3px 8px;border-radius:6px;background:var(--card2);border:1px solid var(--bd);color:var(--tx)}
+  .grp{border:1px solid var(--bd);border-radius:7px;margin-bottom:6px;overflow:hidden}
+  .grp .gt{font-size:10px;padding:3px 8px;background:#0c0d10;color:var(--tx3);border-bottom:1px solid var(--bd)}
+  .grp .gi{padding:5px 7px;display:flex;flex-wrap:wrap;gap:4px}
+  .note{font-size:11.5px;color:var(--tx2);background:var(--card2);border-left:3px solid var(--ac);border-radius:0 8px 8px 0;padding:8px 12px;margin-top:8px}
+  .note b{color:var(--tx)}
+  .verdict{margin-top:10px;font-size:12px}
+  .verdict.ok{color:var(--ok)}
+  .verdict.no{color:var(--err)}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+  th,td{border:1px solid var(--bd);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:#0c0d10;color:var(--tx2);font-weight:600}
+  td code{background:var(--card2);border:1px solid var(--bd);border-radius:4px;padding:1px 5px;font-size:11px}
+  .footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--bd);color:var(--tx3);font-size:11.5px}
+</style>
+</head>
+<body>
+
+<h1>两个理解确认：Q7 实现路径 · Q8 条目来源</h1>
+<div class="sub">dsh-sidebar-hub · 右侧栏起始页分类框架</div>
+
+<h2>Q7「替换引导页正文」是什么意思？<span class="tag">打开右侧栏看到什么</span></h2>
+<div class="lead">
+dsh 右侧栏在「没有指定要打开的内容」时，会显示一个<b>起始页</b>（框架自带的"引导页"：一列扁平胶囊，每个胶囊是一个插件入口）。
+框架提供了一条正式扩展点：插件可以<b>整页接管这个起始页的正文</b>。所以有两种做法：
+</div>
+
+<div class="row">
+  <div class="col bad">
+    <div class="col-head">❌ 我之前做的（错的）</div>
+    <div class="col-body">
+      <div class="mini">
+        <div class="bar">
+          <span class="chip">📄 文件</span><span class="chip">💻 终端</span>
+          <span class="chip hl">🔧 工作台</span><span class="chip">＋</span>
+        </div>
+        <div class="body">
+          右侧栏里<b>多出一个「工作台」标签</b>；起始页还是框架原来的胶囊列表；<br>要点开「工作台」标签，才看到分类界面。
+          <div class="flat" style="margin-top:8px">
+            <span class="cap">📄 文件</span><span class="cap">💻 终端</span><span class="cap">🔧 工作台 ← 多一层</span>
+          </div>
+        </div>
+      </div>
+      <div class="verdict no">✗ 多了一层：右侧栏 → 工作台标签 → 分类 → 内容</div>
+    </div>
+  </div>
+
+  <div class="col good">
+    <div class="col-head">✅ 你要的（替换起始页）</div>
+    <div class="col-body">
+      <div class="mini">
+        <div class="bar">
+          <span class="chip">📄 文件</span><span class="chip">💻 终端</span><span class="chip">＋</span>
+        </div>
+        <div class="body" style="padding:6px">
+          <div class="grp"><div class="gt">▾ 工作台</div><div class="gi"><span class="cap">个人工作台</span><span class="cap">故障排查</span><span class="cap">交易</span></div></div>
+          <div class="grp"><div class="gt">▾ 工程与任务</div><div class="gi"><span class="cap">任务</span><span class="cap">终端</span><span class="cap">Git</span></div></div>
+          <div class="grp"><div class="gt">▾ 浏览与工具</div><div class="gi"><span class="cap">浏览器</span><span class="cap">语音转文字</span></div></div>
+        </div>
+      </div>
+      <div class="verdict ok">✓ 打开右侧栏 → 直接就是分类界面（起始页被整个替换）</div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <b>一句话：</b>「替换」= 把框架自带的那张起始页（扁平胶囊列表）<b>换成我们的分类界面</b>。
+  不新增标签、不套一层；右侧栏打开后第一眼看到的就是分组后的所有插件入口。
+  <br><b>顺带效果：</b>其他插件原来贡献的扁平胶囊不再单独出现——入口统一由分类框架组织（这正是「彻底分组」）。
+</div>
+
+<h2>Q8 条目从哪来？自动发现 vs 手工清单<span class="tag">举例</span></h2>
+<div class="lead">
+假设你机器上装了这些插件（每个插件向右侧栏注册一个「类型」，例如 <code>kind='personal-workbench'</code>）：
+</div>
+
+<div class="mini" style="margin-bottom:14px">
+  <div class="bar"><span style="font-size:11px;color:var(--tx3)">已安装插件（注册表里能查到）</span></div>
+  <div class="body" style="min-height:auto">
+    <div class="flat">
+      <span class="cap">personal-workbench</span><span class="cap">troubleshoot-workbench</span>
+      <span class="cap">trading-workbench</span><span class="cap">audio-transcriber</span>
+      <span class="cap">audio-tts</span><span class="cap">files(官方)</span>
+      <span class="cap">terminal</span><span class="cap">git</span>
+    </div>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th style="width:120px">做法</th>
+    <th>它怎么工作</th>
+    <th>今天装了上面 8 个插件</th>
+    <th>明天新装一个「翻译插件」<code>kind='translator'</code></th>
+  </tr>
+  <tr>
+    <td><b>A 自动发现</b><br><span style="color:var(--tx3);font-size:11px">（推荐）</span></td>
+    <td>hub 启动时问一次注册表：<code>SidebarRightTabs.entries()</code> → 拿到全部已注册类型；<br>再按一张<b>映射表</b>把类型分到各组；映射表里没有的 → 进「其他」组</td>
+    <td>分类界面自动列出 8 个条目，按映射表归组（工作台组 3 个、浏览与工具组 2 个…）</td>
+    <td><b>自动出现</b>，落在「其他」组（因为映射表没登记它）——不用改 hub 代码</td>
+  </tr>
+  <tr>
+    <td><b>B 手工清单</b></td>
+    <td>hub 代码里写死名单：<code>[{kind:'personal-workbench', group:'工作台'}, …]</code></td>
+    <td>同左（但名单是我们手写的）</td>
+    <td><b>不出现</b>，除非我们改 hub 代码、重新打包安装</td>
+  </tr>
+  <tr>
+    <td><b>C 插件自注册</b></td>
+    <td>hub 暴露一个服务，其他插件主动来登记「我是什么、属于哪组」；hub 只做兜底</td>
+    <td>需要每个插件配合改一行代码来登记</td>
+    <td>需要「翻译插件」自己改代码登记（不改就进「其他」组）</td>
+  </tr>
+</table>
+
+<div class="note">
+  <b>我推荐 A：</b>因为它符合你说的「里面的条目是各种外部和我们之前开发的各种插件」——装什么就自动有什么，
+  hub 只需要维护一张「哪个 kind 属于哪个组」的映射表（8 个已知插件的 kind 都是确定的，直接映射）。
+</div>
+
+<div class="footer">
+  待你确认：<b>Q7 是否就是「替换起始页」这个做法</b>；<b>Q8 是否选 A（自动发现 + 映射表）</b>。确认后我继续最后一层细节（分组持久化范围、拖拽交互），然后动手重做。
+</div>
+
+</body>
+</html>

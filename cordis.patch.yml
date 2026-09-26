@@ -1,0 +1,27 @@
+# dsh-sidebar-hub — bundle patch.
+#
+# Registers the categorized sidebar workbench host entry:
+#   - /shub/api/<method> JSON 网关（session/fs/git/jobs/subagents/browser/changes）
+#   - /shub/ws/agent-opens（sidebar_open 请求推送）
+#   - /shub/file /shub/html /shub/upload
+# 全部前置 trust-fence。
+#
+# config 为默认层：`sidebar-hub:` 段在 $DSH_HOME/settings.yaml 可覆盖。
+# 只声明代码实际消费的配置键（工程规范）。终端配置自 v0.2 起由官方终端
+# （kind='terminal'，builtin）负责，本插件不再声明 shell 等终端键。
+- insert:
+  - id: sidebar-hub
+    name: dsh-sidebar-hub
+    inject:
+      - webServer
+    config:
+      # 工作区围栏：true=只放行会话工作区内路径（默认安全）
+      workspaceFenceEnabled: true
+      # 上传单文件字节上限
+      uploadLimitBytes: 10485760
+      # 媒体/HTML 预览单文件字节上限
+      mediaLimitBytes: 10485760
+      # 目录列表返回条数上限
+      listLimit: 1000
+      # fs.read 文本读取字节上限
+      readLimit: 1048576

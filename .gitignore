@@ -1,0 +1,20 @@
+node_modules/
+dist/
+*.tgz
+.DS_Store
+# ── 补充（2026-09-23 推送前统一）──
+.pnpm-store/
+pnpm-store/
+.venv/
+.venv-*/
+__pycache__/
+*.pyc
+.mscache*/
+.mscache-newtts/
+test-home/
+.credentials*
+*.key
+*.pem
+lib/
+*.log
+.debug/

@@ -1,0 +1,422 @@
+/*
+ * 「右侧栏分类」设置卡片样式。
+ *
+ * 外框严格对齐框架内置插件卡片（`ui-settings-plugins/PluginCard.module.css`
+ * 与 `dsh-global-auth` 的同款写法）：0.5px 边框 / 16px 圆角 / 层 3 背景 /
+ * 头部 padding 14×16 / 名称 15px-600 / 描述 13px-tertiary / chevron 180° 翻转。
+ * 全部消费 --dsw-* token（禁写死色值）；分组色调走 `[data-tone]`。
+ */
+
+/* ── 卡片外框（同 PluginCard） ─────────────────────────────────────────── */
+
+.hubCard {
+  list-style: none;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: 16px;
+  background: var(--dsw-alias-bg-layer-3);
+  transition: border-color 160ms, background 160ms;
+  font: inherit;
+  color: inherit;
+  /* 字号跟随官方「设置→通用设置→字号」（默认 14 → 15/13/12/11 层级，与框架卡片一致）*/
+  --hub-font-title: 600 calc(var(--dsh-content-font-size, 14px) + 1px) / 1.5 var(--dsw-font-family);
+  --hub-font-body: 400 calc(var(--dsh-content-font-size, 14px) - 1px) / 1.5 var(--dsw-font-family);
+  --hub-font-body-strong: 600 calc(var(--dsh-content-font-size, 14px) - 1px) / 1.5 var(--dsw-font-family);
+  --hub-font-small: 400 calc(var(--dsh-content-font-size, 14px) - 2px) / 1.5 var(--dsw-font-family);
+  --hub-font-micro: 400 calc(var(--dsh-content-font-size, 14px) - 3px) / 1.5 var(--dsw-font-family);
+  --hub-font-micro-strong: 600 calc(var(--dsh-content-font-size, 14px) - 3px) / 1.5 var(--dsw-font-family);
+  --hub-font-small-strong: 600 calc(var(--dsh-content-font-size, 14px) - 2px) / 1.5 var(--dsw-font-family);
+  --hub-font-tiny: 400 calc(var(--dsh-content-font-size, 14px) - 2px) / 1.5 var(--dsw-font-family);
+  --hub-font-tiny-strong: 600 calc(var(--dsh-content-font-size, 14px) - 2px) / 1.5 var(--dsw-font-family);
+}
+
+.hubCard:hover {
+  border-color: var(--dsw-alias-label-dimmed);
+}
+
+.hubCardOpen {
+  background: var(--dsw-alias-bg-layer-2);
+  border-color: var(--dsw-alias-label-dimmed);
+}
+
+.hubCardHead {
+  width: 100%;
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+}
+
+.hubCardHead:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: -2px;
+}
+
+.hubCardHeadText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hubCardName {
+  font-size: calc(var(--dsh-content-font-size, 14px) + 1px);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--dsw-alias-label-primary);
+}
+
+.hubCardDesc {
+  font-size: calc(var(--dsh-content-font-size, 14px) - 1px);
+  line-height: 1.5;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.hubChevron {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  transition: transform 160ms;
+}
+
+.hubChevronOpen {
+  transform: rotate(180deg);
+}
+
+.hubCardBody {
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
+  margin: 0 16px;
+  padding: 12px 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hubCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+.hubFooterNote {
+  flex: 1;
+  min-width: 0;
+  font-size: calc(var(--dsh-content-font-size, 14px) - 2px);
+  line-height: 1.5;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.hubHint {
+  margin: 0;
+  font: var(--hub-font-tiny);
+  line-height: 1.6;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* ── 卡片内小节（可折叠） ─────────────────────────────────────────────── */
+
+.hubSub {
+  border: 0.5px solid var(--dsw-alias-border-l1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.hubSubHead {
+  width: 100%;
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+}
+
+.hubSubHead:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.hubSubTitle {
+  flex: 1;
+  min-width: 0;
+  font: var(--hub-font-body-strong);
+  line-height: 1.5;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.hubSubCount {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-tertiary);
+  font: var(--hub-font-micro);
+  line-height: 16px;
+}
+
+.hubSubBody {
+  padding: 4px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 0.5px solid var(--dsw-alias-border-l1);
+}
+
+/* ── 标签（同框架 Tag 观感） ──────────────────────────────────────────── */
+
+.hubTag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-secondary);
+  font: var(--hub-font-tiny);
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.hubTagWarn {
+  border-color: var(--dsw-alias-state-warn-primary);
+  color: var(--dsw-alias-state-warn-primary);
+}
+
+/* ── 分组色调（同分类页：`[data-tone]` → --hub-tone） ─────────────────── */
+
+.hubGroupChip[data-tone='brand'], .hubKindTile[data-tone='brand'] { --hub-tone: var(--dsw-alias-brand-primary); }
+.hubGroupChip[data-tone='business'], .hubKindTile[data-tone='business'] { --hub-tone: var(--dsw-alias-state-business-primary); }
+.hubGroupChip[data-tone='success'], .hubKindTile[data-tone='success'] { --hub-tone: var(--dsw-alias-state-success-primary); }
+.hubGroupChip[data-tone='warn'], .hubKindTile[data-tone='warn'] { --hub-tone: var(--dsw-alias-state-warn-primary); }
+.hubGroupChip[data-tone='error'], .hubKindTile[data-tone='error'] { --hub-tone: var(--dsw-alias-state-error-primary); }
+.hubGroupChip[data-tone='neutral'], .hubKindTile[data-tone='neutral'] { --hub-tone: var(--dsw-alias-label-tertiary); }
+
+/* ── 分组管理 ────────────────────────────────────────────────────────── */
+
+.hubGroupList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hubGroupChip {
+  --hub-tone: var(--dsw-alias-label-tertiary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 8px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 9px;
+  background: var(--dsw-alias-bg-layer-3);
+}
+
+.hubGroupDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--hub-tone);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hub-tone) 18%, transparent);
+}
+
+.hubGroupInput {
+  width: 96px;
+  border: 0;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: var(--hub-font-body);
+  line-height: 1.5;
+  outline: none;
+}
+
+.hubGroupCount {
+  flex: none;
+  padding: 0 5px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--hub-tone) 16%, transparent);
+  color: var(--hub-tone);
+  font-size: calc(var(--dsh-content-font-size, 14px) - 3px);
+  line-height: 16px;
+}
+
+.hubIconBtn {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: calc(var(--dsh-content-font-size, 14px) - 4px);
+  cursor: pointer;
+}
+
+.hubIconBtn:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-error);
+}
+
+.hubRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── 表单控件 ────────────────────────────────────────────────────────── */
+
+.hubInput,
+.hubSelect {
+  min-width: 0;
+  padding: 4px 8px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-3);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: calc(var(--dsh-content-font-size, 14px) - 1px);
+  line-height: 1.5;
+  outline: none;
+}
+
+.hubInput {
+  flex: 1;
+}
+
+.hubInput:focus,
+.hubSelect:focus {
+  border-color: var(--dsw-alias-brand-primary);
+}
+
+.hubSelect {
+  width: 100%;
+  min-width: 96px;
+}
+
+/* 列宽：分组下拉要读全名（否则被挤成一个字），隐藏/操作列固定窄宽 */
+.hubSettingsTable th:nth-child(2),
+.hubSettingsTable td:nth-child(2) { width: 132px; }
+
+.hubSettingsTable th:nth-child(4),
+.hubSettingsTable td:nth-child(4) { width: 48px; text-align: center; }
+
+.hubSettingsTable th:nth-child(5),
+.hubSettingsTable td:nth-child(5) { width: 92px; }
+
+.hubBtn {
+  appearance: none;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  padding: 4px 12px;
+  background: none;
+  color: var(--dsw-alias-label-secondary);
+  font: var(--hub-font-body);
+  line-height: 1.5;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hubBtn:hover:not(:disabled) {
+  color: var(--dsw-alias-label-primary);
+  border-color: var(--dsw-alias-label-dimmed);
+}
+
+.hubBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── 条目映射表 ──────────────────────────────────────────────────────── */
+
+.hubSettingsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--hub-font-body);
+}
+
+.hubSettingsTable th {
+  padding: 6px;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-tertiary);
+  font: var(--hub-font-tiny-strong);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.hubSettingsTable td {
+  padding: 6px;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l1);
+  color: var(--dsw-alias-label-primary);
+  vertical-align: middle;
+}
+
+.hubSettingsTable tr[data-unregistered='true'] .hubKind {
+  color: var(--dsw-alias-label-secondary);
+}
+
+.hubKindCell {
+  min-width: 180px;
+}
+
+.hubKindMain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hubKindTile {
+  --hub-tone: var(--dsw-alias-label-tertiary);
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--hub-tone) 18%, transparent);
+  color: var(--hub-tone);
+  font: var(--hub-font-micro-strong);
+  line-height: 1;
+}
+
+.hubKindText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.hubKind {
+  font: var(--hub-font-body-strong);
+  line-height: 1.4;
+}
+
+.hubKindId {
+  font-family: var(--ds-font-family-code);
+  font-size: calc(var(--dsh-content-font-size, 14px) - 3px);
+  line-height: 1.3;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.hubCheckCell,
+.hubActionCell {
+  width: 1%;
+  white-space: nowrap;
+  text-align: center;
+}

@@ -1,0 +1,35 @@
+/*
+ * Hub 全插件字号刻度（v0.4）：跟随官方「设置→通用设置→字号」。
+ *
+ * 官方把 `--dsh-content-font-size`（12–17px，默认 14）写在 body 上并派生
+ * `--dsw-font-markdown-*`；hub 的界面字号原本用固定刻度 token，不随设置。
+ * 这里在 body 声明一套偏移刻度，默认值与既有视觉一致：
+ *   title  +2（默认 16 = --dsw-font-base-16）
+ *   body   +0（默认 14）
+ *   small  −1（默认 13）
+ *   tiny   −2（默认 12）
+ *   micro  −3（默认 11）
+ * 使用处统一 `font: var(--hub-font-*)` / `font-size: var(--hub-font-*-size)`。
+ *
+ * 挂 body 是因为 hub 各视图（分类框架/设置卡片/Git/浏览器/Subagent/文件变动）
+ * 都是 body 的后代；官方 ui-theme 也把 --dsh-content-font-size 写 body。
+ */
+body {
+  --hub-font-title: 600 calc(var(--dsh-content-font-size, 14px) + 2px) / 1.5 var(--dsw-font-family);
+  --hub-font-title-size: calc(var(--dsh-content-font-size, 14px) + 2px);
+  --hub-font-body: 400 calc(var(--dsh-content-font-size, 14px) + 0px) / 1.5 var(--dsw-font-family);
+  --hub-font-body-size: calc(var(--dsh-content-font-size, 14px) + 0px);
+  --hub-font-body-strong: 600 calc(var(--dsh-content-font-size, 14px) + 0px) / 1.5 var(--dsw-font-family);
+  --hub-font-small: 400 calc(var(--dsh-content-font-size, 14px) - 1px) / 1.5 var(--dsw-font-family);
+  --hub-font-small-size: calc(var(--dsh-content-font-size, 14px) - 1px);
+  --hub-font-small-strong: 600 calc(var(--dsh-content-font-size, 14px) - 1px) / 1.5 var(--dsw-font-family);
+  --hub-font-tiny: 400 calc(var(--dsh-content-font-size, 14px) - 2px) / 1.5 var(--dsw-font-family);
+  --hub-font-tiny-size: calc(var(--dsh-content-font-size, 14px) - 2px);
+  --hub-font-tiny-strong: 600 calc(var(--dsh-content-font-size, 14px) - 2px) / 1.5 var(--dsw-font-family);
+  --hub-font-micro: 400 calc(var(--dsh-content-font-size, 14px) - 3px) / 1.5 var(--dsw-font-family);
+  --hub-font-micro-size: calc(var(--dsh-content-font-size, 14px) - 3px);
+  --hub-font-micro-strong: 600 calc(var(--dsh-content-font-size, 14px) - 3px) / 1.5 var(--dsw-font-family);
+  /* 设置卡片（框架插件卡片同款）：标题 15 / 正文 13 的层级（偏移 −1 即 13） */
+  --hub-font-card-title: 600 calc(var(--dsh-content-font-size, 14px) + 1px) / 1.5 var(--dsw-font-family);
+  --hub-font-card-body: 400 calc(var(--dsh-content-font-size, 14px) - 1px) / 1.5 var(--dsw-font-family);
+}

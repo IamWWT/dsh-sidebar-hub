@@ -1,0 +1,136 @@
+/* Mermaid 图渲染（dsh-sidebar-hub，吸收自 dsh-better-sidebar 的样式语义）。
+   全部使用 DSH 主题 token；颜色/字号对齐全局尺度。 */
+
+.hubMermaidMarkdown {
+  display: block;
+  width: 100%;
+}
+
+.hubMermaidWrap {
+  margin: 8px 0;
+  border: 1px solid var(--dsw-alias-card-border, rgba(127, 127, 127, 0.35));
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--dsw-alias-surface-card, var(--dsw-static-neutral-bluish-50, #fff));
+}
+
+.hubMermaidHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--dsw-alias-card-border, rgba(127, 127, 127, 0.35));
+  font-size: var(--dsw-font-xs-13, 13px);
+  color: var(--dsw-alias-label-secondary-foreground, var(--dsw-static-neutral-500, #777));
+}
+
+.hubMermaidInfo {
+  font-family: var(--dsw-font-family-mono, monospace);
+  font-size: var(--dsw-font-xxs-12, 12px);
+}
+
+.hubMermaidCopy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--dsw-alias-label-secondary-foreground, var(--dsw-static-neutral-500, #777));
+  cursor: pointer;
+  font-size: var(--dsw-font-xxs-12, 12px);
+}
+.hubMermaidCopy:hover {
+  background: var(--dsw-alias-surface-hover, rgba(127, 127, 127, 0.1));
+  color: var(--dsw-alias-label-primary-foreground, inherit);
+}
+
+.hubMermaidBody {
+  padding: 10px;
+  overflow-x: auto;
+  cursor: zoom-in;
+}
+.hubMermaidBody svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.hubMermaidError {
+  margin: 8px 10px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: var(--dsw-alias-state-error-primary, rgba(220, 38, 38, 0.12));
+  color: var(--dsw-alias-state-error-primary, #dc2626);
+  font-size: var(--dsw-font-xs-13, 13px);
+}
+
+.hubMermaidCode {
+  margin: 0 10px 10px;
+  padding: 8px;
+  border-radius: 4px;
+  background: var(--dsw-alias-surface-code, rgba(127, 127, 127, 0.08));
+  overflow-x: auto;
+  font-family: var(--dsw-font-family-mono, monospace);
+  font-size: var(--dsw-font-xxs-12, 12px);
+  color: var(--dsw-alias-label-primary-foreground, inherit);
+}
+
+/* ── 缩放浮层 ─────────────────────────────────────────────── */
+.hubMermaidModal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--dsw-elevation-modal-backdrop, rgba(0, 0, 0, 0.55));
+  backdrop-filter: blur(2px);
+}
+
+.hubMermaidModalToolbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.hubMermaidModalButton {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--dsw-alias-card-border, rgba(127, 127, 127, 0.35));
+  border-radius: 6px;
+  background: var(--dsw-alias-surface-card, #fff);
+  color: var(--dsw-alias-label-primary-foreground, inherit);
+  cursor: pointer;
+  font-size: var(--dsw-font-base-16, 16px);
+  line-height: 1;
+}
+.hubMermaidModalButton:hover {
+  background: var(--dsw-alias-surface-hover, rgba(127, 127, 127, 0.1));
+}
+
+.hubMermaidModalStage {
+  max-width: min(90vw, 1100px);
+  max-height: 78vh;
+  overflow: hidden;
+  background: var(--dsw-alias-surface-card, #fff);
+  border-radius: 8px;
+  box-shadow: var(--dsw-elevation-modal-shadow, 0 8px 32px rgba(0, 0, 0, 0.3));
+}
+.hubMermaidModalStage svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  cursor: grab;
+}
+.hubMermaidModalStage svg:active {
+  cursor: grabbing;
+}
+
+.hubMermaidModalHint {
+  margin-top: 8px;
+  font-size: var(--dsw-font-xxs-12, 12px);
+  color: var(--dsw-alias-label-secondary-foreground, rgba(255, 255, 255, 0.8));
+}
