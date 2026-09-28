@@ -1,5 +1,12 @@
 # Tasks 002 右侧栏分类框架
 
+## 当前状态
+
+- 文档性质：规格（任务清单与逐项验收记录）
+- 对应版本：v0.1.3
+- 状态：有效
+- 维护者：AI + 用户
+
 - 状态：**T1–T7 全部完成**（T7 已在测试实例 28/28 通过）/ 日期 2026-09-13
 - 规则：一个任务一个逻辑改动；每任务有完成定义与验证；全程在 **3084 测试环境**验证，不碰 3082。
 
@@ -102,62 +109,26 @@
 - 另记（**非本插件**，交回用户）：`dsh-global-auth` 往 list 槽 `sidebar.footer.action` 注册时未带 `options.id`，当前 harness 的 list 槽要求 id → 控制台 2 条 error。本插件验收已把它单列，不计入判定。
 - 截图证据：`docs/verify/01-catalog.png`、`02-files-forward.png`、`03-settings-card.png`、`04-catalog-after-hide.png`、`05-final.png`。
 
-## v0.2 变更（2026-09-15）— 终端交还官方 + 数独归游戏组 ✅ 完成
+## 历史沿革（v0.2–v0.9 变更，压成 5 条；决策原委见 spec.md §0，验收条号见 spec.md §7 增补）
 
-- 用户反馈：harness 更新至 0.1.6-alpha.1 后官方内置右侧栏终端（kind=`terminal`，guide 卡「新建终端」）；官方 `dsh-tool-terminal` 提供 `terminal_open/send/read/signal/close/list`（与 hub 自研 `terminal_*` 五工具重名）。要求 hub 默认用官方终端、删除参考 better-sidebar 的自研终端；数独归「游戏」组。
-- 改动：
-  - **client**：`entry.ts`（五个 `hub-*` 类型/正文，去掉 hub-terminal）；`tabs/HubTabBodies.tsx`（删 HubTerminalBody）；`hub-store.ts`（删终端 facet/偏好，留浏览器偏好）；`terminal-api.ts`（改名 `hubApi`，删终端方法/WS 地址，保留 gitApi/browserProbe/subagentsLive/job*）；删 `TerminalView.tsx` / `terminal.css` / `terminal-font.ts` / `terminal-links.ts` / `terminal-prefs.ts` / `one-dark-palette.ts`；`locales.ts` 删终端文案键；`icons.tsx` 删终端图标。
-  - **host**：`index.ts`（去 pty/工具装配，保留 agent-opens 与 settings）；`routes.ts`（删终端/agent 终端 WS，agent-opens WS 就地接线）；`api.ts`（删 `pty.close`/`shell.get`/`terminal.deps`/`agent.pty.close`）；`config.ts` + `cordis.patch.yml`（删终端配置键）；删 `pty-manager.ts` / `agent-pty.ts` / `pty-deps.ts` / `terminal-ws.ts` / `tools.ts`；`agent-opens.ts` 补 `attachAgentOpen`；`wire.ts` 删 pty 错误码。
-  - **映射**：`shared/catalog-config.ts` 出厂映射 `terminal → official`（官方组，与 Files 同组）、`sudoku → games`，删 `hub-terminal`。
-  - **依赖**：package.json 删 `node-pty` / `@xterm/xterm` / `@xterm/addon-fit`。
-  - **测试**：`client-wiring.smoke.mjs`（五类型五正文 + 官方终端转发 + 数独断言）；`host-settings.smoke.mjs`（terminal/sudoku 出厂规则）；`ui-acceptance.mjs`（官方终端打开断言 `[data-sidebar-terminal]`、数独在游戏组、hub-terminal 消失）。
-- 完成定义：`pnpm check` 全绿；测试实例分类页「终端」点击打开官方终端；数独在「游戏」组；无 `terminal_*` 重名冲突。
-- 验证：`pnpm check` 绿（build + typecheck + 两组冒烟）；测试实例 3085 UI 验收（见 PROGRESS.md）。
-
-## v0.3 变更（2026-09-17）— 官方文件预览增强（md 接管 + mermaid + Office）✅ 完成
-
-- 用户反馈：官方工作区文件 docx/ppt/图片看不了，md 里 mermaid 不渲染为图；修复如需替换官方功能需说明。
-- 做法：官方 `documentPreviews` 扩展点注册 `priority:'extension'` 渲染器（`dsh-sidebar-hub/markdown` + `dsh-sidebar-hub/office`），
-  惰性 chunk（mermaid/mammoth）经 `/shub/bundle/<name>.js` 伺服；`/shub/file` 支持相对路径。
-- 产物：dist/chunk-mermaid.js、dist/chunk-office.js；依赖 +mammoth +jszip。
-- 验证：`pnpm check` 全绿（含 chunk 门禁）；`test/ui-document-v03.mjs` 11/11（md/mermaid/图片/docx/pptx）。
-
-## v0.4 变更（2026-09-17）— 字号跟随官方设置 ✅ 完成
-
-- 用户反馈：hub 分类字体希望可调、跟随「设置→通用设置→字号」。
-- 做法：`hub-font.css` 在 body 声明 `--hub-font-*` 偏移刻度，全插件 css 改用；验证 `test/ui-font-v04c.mjs` 三档通过。
-
-## v0.5 变更（2026-09-19）— 浏览器交还官方 ✅ 完成
-
-- 用户反馈：harness 0.1.6-alpha.2 官方新增浏览器（kind=`browser`，builtin），当前在「其他」组；要求放「官方」组并删除 hub 自研浏览器。
-- 改动：
-  - `shared/catalog-config.ts`：`browser` → official 组，`OFFICIAL_KINDS` 加 browser；删 `hub-browser` 出厂映射。
-  - client：删 `BrowserView.tsx` / `browser.ts` / `browser.css` / `SandboxStatusBar.tsx` / `hub-store.ts`（仅浏览器偏好用）；`entry.ts`/`tabs/HubTabBodies.tsx` 五类型五正文 → 四类型四正文；`terminal-api.ts` 删 `browserProbe`；`locales.ts` 删 13 个浏览器键。
-  - host：删 `browser-probe.ts` 与 `api.ts` 的 `browser.probe` 方法。
-- 验证：`pnpm check` 全绿（4 类型 / 4 正文）；`test/ui-acceptance.mjs` 断言更新（官方浏览器打开 `[data-sidebar-browser-frame]`、官方组含 browser、浏览与工具剩语音工具、隐藏测试改用 hub-tasks）。
-
-## v0.6 变更（2026-09-19）— 清空 hub 自研内容类型 ✅ 完成
-
-- 用户确认：删 hub-git/hub-changes/hub-subagent + 任务管理也删。
-- 改动：不再注册任何 `hub-*` kind/正文；host git.*/jobs.*/subagents.live/changes.ops 与模块移除；client 视图（GitLens/ChangesTab/SubagentView/DiffPane/SessionLens/diff/*）、API 层（terminal-api）、相关 locales 键删除；catalog-config 出厂映射删 hub-*。
-- 验证：`pnpm check` 全绿；UI 验收 35/35（工程与任务组无条目、hub-* 全移除、官方转发正常）。
-
-## v0.7 变更（2026-09-19）— Office 渲染器交还官方 ✅ 完成
-
-- 用户确认：官方已内置 Office 预览（doc/docx/xls/xlsx/ppt/pptx），删 hub 自研 office 渲染器。
-- 改动：移除 office-body.tsx / chunks/office.tsx / office chunk / mammoth+jszip 依赖 / office locales 键；md(mermaid) 渲染器保留。
-- 验证：文档验收 11/11（md 接管 + mermaid + md 内图片 + docx/pptx 官方内置承接 + 无控制台错误）。
-
-## v0.8 变更（2026-09-19）— 默认分组精简 ✅ 完成
-
-- 用户反馈：「工程与任务那里的默认框啥都没 默认可以删除了」「浏览与工具 改成 工具 就行了」。
-- 改动：`DEFAULT_GROUP_IDS`/`DEFAULT_GROUPS`/`PROTECTED_GROUP_IDS` 移除 engineering（默认五组 → 四组：官方/工作台/工具/游戏）；browse-tools 组 title 改「工具」（分组 id 不变，用户归属规则不受影响）。
-- 验证：`pnpm check` 全绿（host-settings 断言四组与「工具」名、client-wiring 断言无「工程与任务」组）；测试实例 UI 验收同步。
-
-
-## v0.9 变更（2026-09-20）— 插件改名跟随 ✅ 完成
-
-- 用户反馈：「个人工作台id改变,默认需要变动」。
-- 改动：`catalog-config.ts` 出厂映射 `'personal-workbench'` → `'daily-workbench'`（归「工作台」组）；client-wiring 冒烟 seed 与 settings scopeValue 同步。
-- 测试环境：`dsh-test-home/profiles/web/package.json` 依赖改 `link:dsh-daily-workbench` + bundles 改名 + lockfile 更新（原指向已删除的旧 tgz，导致测试实例无「个人工作台」）。
-- 验证：`pnpm check` 全绿；UI 验收 35/35（2e 工作台组含「个人工作台」）。
+1. **v0.2（2026-09-15）终端交还官方 + 数独归游戏组** — client 删 `TerminalView`/`terminal-*` 系列、
+   `entry.ts` 去 hub-terminal；host 删 `pty-manager`/`agent-pty`/`pty-deps`/`terminal-ws`/`tools`，`api.ts` 去
+   `pty.close`/`shell.get`/`terminal.deps`/`agent.pty.close`（`agent-opens` 保留并就地接线）；映射 `terminal → official`、
+   `sudoku → games`；依赖删 `node-pty`/`@xterm/xterm`/`@xterm/addon-fit`；三组测试断言同步。
+   验证：`pnpm check` 全绿；测试实例「终端（官方）」打开官方终端、数独在「游戏」组（见 PROGRESS.md）。
+2. **v0.3 + v0.4（2026-09-17）文件预览增强与字号跟随** — v0.3 注册 `dsh-sidebar-hub/markdown` +
+   `dsh-sidebar-hub/office` 渲染器，惰性 chunk `dist/chunk-mermaid.js`/`dist/chunk-office.js` 经 `/shub/bundle/<name>.js`
+   伺服，`/shub/file` 支持工作区相对路径；依赖 +mammoth +jszip。v0.4 `hub-font.css` 声明 `--hub-font-*` 偏移刻度，
+   全插件 css 改用。验证：`test/ui-document-v03.mjs` **11/11**；`test/ui-font-v04c.mjs` 改 `--dsh-content-font-size`
+   16→17→12 三档通过。
+3. **v0.5 + v0.6 + v0.7（2026-09-19）三项交还官方** — v0.5 `browser → official`、`OFFICIAL_KINDS` 加 browser，
+   删 `BrowserView`/`browser.ts`/`browser.css`/`SandboxStatusBar`/`browser-probe`（四类型四正文）；v0.6 不再注册任何
+   `hub-*` kind/正文，host git/changes/subagents/jobs 与 client 视图（GitLens/ChangesTab/SubagentView/DiffPane/SessionLens/diff）
+   全删；v0.7 删 office-body/chunks/office chunk 与 mammoth+jszip。验证：`pnpm check` 全绿（4→0 类型、仅 mermaid chunk）；
+   UI 验收 **35/35**、文档 **11/11**。
+4. **v0.8（2026-09-19）默认分组精简** — `DEFAULT_GROUP_IDS`/`DEFAULT_GROUPS`/`PROTECTED_GROUP_IDS` 移除
+   `engineering`（五组 → 四组：官方/工作台/工具/游戏）；`browse-tools` title 改「工具」（id 不变）。
+   验证：`pnpm check` 全绿（host-settings 断言四组与「工具」名、client-wiring 断言无「工程与任务」组）。
+5. **v0.9（2026-09-20）插件改名跟随** — 出厂映射 `'personal-workbench'` → `'daily-workbench'`（归「工作台」组），
+   client-wiring seed 与 settings scopeValue 同步；测试环境 `dsh-test-home/profiles/web` 依赖由失效旧 tgz 改
+   `link:dsh-daily-workbench` + bundles 改名 + lockfile 更新。验证：`pnpm check` 全绿；UI 验收 **35/35**。

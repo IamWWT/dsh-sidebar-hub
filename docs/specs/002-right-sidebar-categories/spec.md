@@ -1,77 +1,49 @@
 # Spec 002 右侧栏分类框架（起始页替换）
 
+## 当前状态
+
+- 文档性质：规格（需求规格，需求已冻结）
+- 对应版本：v0.1.3
+- 状态：有效
+- 维护者：AI + 用户
+
 - 状态：**需求已冻结（v0.8 变更已登记，2026-09-19）** / 初版日期 2026-09-12
 - 历史来源（不再借鉴）：初版曾参考 `dsh-plugins/github/DSH-better-sidebar` v0.19.0（commit `e786d8f`，MIT）；v0.6 起 hub 自研内容类型全部移除，仅 mermaid 渲染管线保留其 MIT 署名（见 `LICENSE`）。
 
-## 0. 变更记录
+## 0. 历史沿革（变更记录 v0.2–v0.9，压成 5 条；验收条号见 §7 增补）
 
-### v0.9（2026-09-20，插件改名跟随）
-
-- 用户原话：「个人工作台id改变,默认需要变动」。
-- 背景事实：`dsh-personal-workbench` 已改名 `dsh-daily-workbench`，其右侧栏标签注册 kind 由 `personal-workbench` 改为 **`daily-workbench`**（标题仍为「个人工作台」，order=21，priority=extension；出处 `dsh-plugins/dsh-daily-workbench/src/client/entry.ts:250-259`）。
-- 决策：hub 出厂映射 `DEFAULT_ENTRY_RULES` 的键跟随改名（`'personal-workbench'` → `'daily-workbench'`，仍归「工作台」组）；旧 kind 不再出现在出厂映射。用户层若残留 `personal-workbench` 规则会在设置卡片显示为「未登记」行，可手动移除或「恢复默认」。
-- 验收：`pnpm check` 全绿（host-settings/client-wiring 断言同步为 `daily-workbench`）；测试实例 UI 验收中「个人工作台」条目归「工作台」组。
-
-### v0.8（2026-09-19，用户反馈）
-
-- 用户原话：「工程与任务那里的默认框啥都没 默认可以删除了」「浏览与工具 改成 工具 就行了」。
-- 背景事实：v0.6 清空 hub 自研内容后「工程与任务」组为空组（无任何条目）；「浏览与工具」组当前仅语音转文字/转语音。
-- 决策：
-  1. **默认删除「工程与任务」组**：`DEFAULT_GROUP_IDS`/`DEFAULT_GROUPS`/`PROTECTED_GROUP_IDS` 移除 `engineering`（默认五组 → 四组：官方/工作台/工具/游戏）；用户已有自定义分组不受影响；已存在的用户配置若含该组仍显示（恢复默认后消失）。
-  2. **「浏览与工具」改名为「工具」**：`DEFAULT_GROUPS` 中 browse-tools 的 `title` 改「工具」（分组 id 不变，用户已有归属规则不受影响）。
-- 验收标准：见 §7 增补（A27）。
-
-### v0.6 + v0.7（2026-09-19，用户确认删除冗余自研功能）
-
-- 用户原话：「我们的git 文件变动 subagent功能 也去掉」「另外官方新版本查看是否已经支持docx预览了 文件打开时,如果是,我们多余做的功能是不是就要去掉」；确认：「三个全删 + 任务管理也删」「删除自研 office 渲染器」。
-- 背景事实：
-  - 官方 0.1.6-alpha.2 **无** Git/文件变动/Subagent 右侧栏 kind（`ui-subagent` 是会话内 `subagentchat`，不是右侧栏面板）；删后无官方承接。
-  - 官方 0.1.6-alpha.2 已内置 Office 预览（`ui-sidebar-documentpreview/office`，doc/docx/xls/xlsx/ppt/pptx，Host `office-to-pdf` 转 PDF + PDF body）；md(mermaid) 渲染器官方仍无。
-- 决策：
-  1. **v0.6 清空 hub 自研内容类型**：移除 `hub-git`/`hub-changes`/`hub-subagent`/`hub-tasks` 四类型及其正文（`GitLens`/`ChangesTab`/`SubagentView`/diff 等）与 host 支持（git.*/changes.*/subagents.live/jobs.*/fs 视图相关）；分类框架只做官方/工作台/小游戏入口编排；`hub-*` kind 彻底不注册。
-  2. **v0.7 删除自研 office 渲染器**：移除 `dsh-sidebar-hub/office` 渲染器（office-body.tsx / office chunk / mammoth+jszip 依赖），Office 预览交由官方内置；md(mermaid) 渲染器（`dsh-sidebar-hub/markdown`）保留。
-- 验收标准：见 §7 增补（A24–A25）。
-
-### v0.5（2026-09-19，用户反馈）
-
-- 用户原话：「刚刚dsh又更新了,新增了浏览器功能, 我们这边更新一下, 现在浏览器在其他里面 ,你放到官方里面,并删除浏览与工具里面的原本的浏览器功能」。
-- 背景事实：harness 更新至 0.1.6-alpha.2，官方内置右侧栏浏览器（`@deepseek-ai/dsh-client-ui-sidebar-browser`，kind=`browser`，builtin，guide 标题「浏览器」）；与 hub 自研 `hub-browser` 不同名，无冲突。
-- 决策（同 v0.2 终端交还官方模式）：
-  1. **浏览器交还官方**：hub 移除自研浏览器实现（client `BrowserView`/`browser.ts`/`SandboxStatusBar` + host `browser-probe` 与 `browser.probe` API）；分类框架「浏览器」条目改为官方 `kind='browser'`，出厂映射归「官方」组（与 Files/终端同组，标「官方」）。
-  2. hub-store 移除浏览器偏好（`browserNoSandbox`/`browserAllowedLoopback` 等）；terminal-api 移除 `browserProbe`。
-  3. 官方浏览器行为以官方实现为准；hub 不再提供沙箱偏好配置（官方无此配置项）。
-  4. **设置卡片适配官方 0.1.6-alpha.2 设置页重构**：官方移除旧 `settings.plugin.item` 插槽，第三方插件配置迁到左侧栏「插件」全局面板（`plugins.bundle.config`，key=包名）的**包详情页**；hub 设置卡片随之迁移注册并完整可达（含隐藏/恢复回归）。
-- 验收标准：见 §7 增补（A22–A23）。
-
-### v0.3（2026-09-15，用户反馈）
-
-- 用户原话：「官方的工作区文件打开后点击部分文件只能查看txt md java等文本文档, 无法查看docx ppt 图片 以及md里面mermaid没有渲染为图片, 修复一下, 如果修复过程需要替换官方功能, 请给出说明」「同意, 实现」。
-- 背景事实：
-  - 官方 `documentpreview`（kind=`text`）是**可扩展注册中心**：`ctx.documentPreviews.register()`（`priority: 'extension'` 优先于 builtin）+ `sidebar.right.tab.document` keyed 槽挂组件——官方预留第三方渲染器扩展位；
-  - 官方不支持：docx/ppt/xlsx（`UNVIEWABLE_BINARY_EXTENSIONS` 黑名单 →「无法查看」空状态）、md 内 mermaid（`MarkdownText` 无 mermaid 分支）、md 内本地图片（官方 body 未传 `pathImages`）；
-  - better-sidebar（MIT）有完整 mermaid 管线（`mermaid.tsx`/`mermaid-sanitize.ts`/`mermaid-blocks.ts`）可吸收；hub 依赖已含 `mermaid ^11.16.1`。
-- 决策：
-  1. **md 渲染接管（替换官方 builtin md 渲染器，走官方扩展位，不动官方源码/files 树）**：注册 id=`dsh-sidebar-hub/markdown`、extensions=`['md','markdown']`、`priority:'extension'` 的渲染器；整体走官方 `MarkdownText` 渲染 + layout effect 把 `language-mermaid` 代码块换成图（吸收 better-sidebar 管线，SVG 消毒/主题跟随/点击放大）；同时传 `pathImages` 修 md 内相对路径图片。
-  2. **Office 渲染器（新增）**：注册 id=`dsh-sidebar-hub/office`、extensions=`['docx','pptx','ppt','xlsx','xls']`（binary）、`priority:'extension'`；docx 用 `mammoth` 转 HTML，pptx/xlsx 做结构化文本提取（轻量，不追求原版式）。
-  3. 图片独立文件官方已支持常见格式（png/jpg/gif/webp/bmp/ico/svg），不在本变更范围；heic/tiff/avif 等如有需要后续补。
-- 验收标准：见 §7 增补（A17–A20）。
-
-### v0.4（2026-09-15，用户反馈）
-
-- 用户原话：「hub分类里面希望字体可以调整大小, 最好跟随 设置->通用设置->字号里面的」。
-- 背景事实：官方字号机制是 `--dsh-content-font-size`（body 上由 `ui-theme` bootstrap 写入，12–17px，默认 14），派生 `--dsw-font-markdown-*`；hub 分类页/设置卡片/正文当前用**固定刻度** `--dsw-font-{base-16,xs-13,xxs-12,...}`，不随官方字号设置变化。
-- 决策：hub 界面字号改为**沿官方 `--dsh-content-font-size` 的偏移刻度**——在 hub 各 css 根声明本地变量 `--hub-font-{title,body,small,tiny}` = `calc(var(--dsh-content-font-size, 14px) + 偏移)`（title=+2、body=+0、small=−1、tiny=−2，默认即现有 16/14/13/12 视觉）；所有分类页/设置卡片/正文使用这些变量替代固定 token。用户调「通用设置→字号」时 hub 界面整体缩放。
-- 验收：见 §7 增补（A22–A23）。
-
-### v0.2（2026-09-15，用户反馈）
-
-- 用户原话：「更新 deepseek harness 后，我发现右侧栏多了一个新建终端，你看看是不是官方的，如果是，就把我们的 hub 里面的设置一下，默认成官方的，另外原先参考 better-sidebar 这个的 terminal 就可以删除了」「数独也设置成默认游戏的」。
-- 背景事实：harness 更新至 0.1.6-alpha.1 后，官方内置右侧栏终端（`@deepseek-ai/dsh-client-ui-sidebar-terminal`，kind=`terminal`，builtin，guide 卡「新建终端」）；官方 `@deepseek-ai/dsh-tool-terminal` 提供模型工具 `terminal_open/send/read/signal/close/list`（其中 `send/read/signal/close/list` 与 hub 自研 tools.ts 的 `terminal_*` 工具**重名**，更新后即冲突源）。
-- 决策：
-  1. **终端交还官方**：hub 移除自研终端实现（client `TerminalView` 体系 + host `node-pty` 体系 + 8 个模型 `terminal_*` 工具）；分类框架「终端」条目默认映射官方 `kind='terminal'`（归「官方」组，与官方 Files 同组，标「官方」）；模型终端工具统一走官方 `dsh-tool-terminal`。
-  2. **数独默认归游戏组**：`kind='sudoku'` 出厂映射进「游戏」组（与扫雷同组）。
-  3. `terminal_*` 工具重名冲突随自研实现移除一并消除；`agent-opens`（sidebar_open 独立功能）保留。
-- 验收标准：见 §7 增补（A13–A16）。
+1. **v0.2（2026-09-15）· 终端交还官方 + 数独归游戏组** — 用户原话：「更新 deepseek harness 后…右侧栏多了一个新建终端，
+   你看看是不是官方的，如果是，就把我们的 hub 里面的设置一下，默认成官方的，另外原先参考 better-sidebar 这个的
+   terminal 就可以删除了」「数独也设置成默认游戏的」。背景事实：harness 0.1.6-alpha.1 内置右侧栏终端
+   （`@deepseek-ai/dsh-client-ui-sidebar-terminal`，kind=`terminal`，builtin）；官方 `@deepseek-ai/dsh-tool-terminal`
+   的 `send/read/signal/close/list` 与 hub 自研 `terminal_*` 重名即冲突源。决策：删 hub 自研终端全套（client + host
+   `node-pty` + 8 个模型工具），分类框架「终端」改转发官方 kind 并归「官方」组（标「官方」）；`kind='sudoku'` 出厂归「游戏」组；
+   `agent-opens`（sidebar_open）保留。验收：§7 条 11–14。
+2. **v0.3（2026-09-15）· 官方文件预览增强（本插件唯一的"替换官方"处）** — 用户原话：官方工作区文件「docx ppt 图片」
+   看不了、md 里 mermaid 不渲染为图，「如果修复过程需要替换官方功能, 请给出说明」。背景事实：官方
+   `documentpreview`（kind=`text`）是**可扩展注册中心**（`ctx.documentPreviews.register()` + `sidebar.right.tab.document`
+   keyed 槽）；官方不支持 docx/pptx/xlsx、md 内 mermaid、md 内本地图片。决策：注册 id=`dsh-sidebar-hub/markdown`
+   （extensions `md`/`markdown`，`priority:'extension'`，整体走官方 `MarkdownText` + mermaid fence 换图 + `pathImages`）与
+   id=`dsh-sidebar-hub/office`（docx 用 mammoth 转 HTML、pptx/xlsx 文本提取；**v0.7 已交还官方**）；mermaid 管线吸收自
+   better-sidebar（MIT，保留署名）；不动官方源码 / files 树 / `text` 类型。验收：§7 条 15–19。
+3. **v0.4（2026-09-15）· 字号跟随官方「设置→通用设置→字号」** — 用户原话：「hub分类里面希望字体可以调整大小, 最好跟随
+   设置->通用设置->字号里面的」。决策：hub 界面字号改为沿官方 `--dsh-content-font-size`（12–17px，默认 14）的**偏移刻度**
+   `--hub-font-{title,body,small,tiny,micro}` = `calc(... +2/+0/−1/−2/−3)`，替代固定 `--dsw-font-*`。验收：§7 条 20–21。
+4. **v0.5–v0.7（2026-09-19）· 三项交还官方 / 清空自研内容** — 三条用户反馈/确认：「新增了浏览器功能…你放到官方里面,
+   并删除浏览与工具里面的原本的浏览器功能」（v0.5）；「我们的git 文件变动 subagent功能 也去掉」+「三个全删 + 任务管理也删」
+   （v0.6）；「删除自研 office 渲染器」（v0.7）。背景事实：官方 0.1.6-alpha.2 内置浏览器（kind=`browser`）与 Office 预览
+   （`ui-sidebar-documentpreview/office`，doc/docx/xls/xlsx/ppt/pptx），但**无** Git/文件变动/Subagent 右侧栏 kind（删后无官方承接）；
+   官方设置页重构移除 `settings.plugin.item`，第三方配置迁到左侧栏「插件」面板包详情页（`plugins.bundle.config`）。
+   决策：v0.5 浏览器交还官方并归「官方」组、hub 移除 `BrowserView`/`browser-probe`/浏览器偏好；v0.6 清空
+   `hub-git`/`hub-changes`/`hub-subagent`/`hub-tasks` 及 host `git.*`/`changes.*`/`subagents.live`/`jobs.*`，分类框架只做入口编排；
+   v0.7 删除自研 office 渲染器（mammoth/jszip + office chunk），**md(mermaid) 渲染器保留**（官方仍无 mermaid）；
+   设置卡片迁至官方「插件」面板并保持完整可达。验收：§7 条 22–26。
+5. **v0.8 + v0.9（2026-09-19/20）· 默认分组精简 + 插件改名跟随** — 用户原话：「工程与任务那里的默认框啥都没 默认可以删除了」
+   「浏览与工具 改成 工具 就行了」「个人工作台id改变,默认需要变动」。决策：默认五组 → 四组（官方/工作台/工具/游戏，
+   `engineering` 从 `DEFAULT_GROUP_IDS`/`DEFAULT_GROUPS`/`PROTECTED_GROUP_IDS` 移除；`browse-tools` 的 title 改「工具」，
+   id 不变，用户既有归属规则不受影响）；出厂映射键 `personal-workbench` → **`daily-workbench`**（标题仍「个人工作台」，
+   order=21，priority=extension；出处 `dsh-plugins/dsh-daily-workbench/src/client/entry.ts:250-259`），用户层残留旧键在设置卡片
+   显示为「未登记」行，可手动移除或「恢复默认」。验收：§7 条 27–29。
 
 ## 1. 目标（一句话）
 

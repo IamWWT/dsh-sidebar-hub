@@ -1,5 +1,12 @@
 # dsh-sidebar-hub — 需求 · 决策 · 实现 · 验收
 
+## 当前状态
+
+- 文档性质：规格（需求 → 决策 → 实现 → 验收追踪表）
+- 对应版本：v0.1.3
+- 状态：有效
+- 维护者：AI + 用户
+
 > 追踪表（以终为始，只记当前有效方向）。规格：[specs/002-right-sidebar-categories/spec.md](specs/002-right-sidebar-categories/spec.md)（需求已冻结）；
 > 技术：[plan.md](specs/002-right-sidebar-categories/plan.md)；任务与状态：[tasks.md](specs/002-right-sidebar-categories/tasks.md)。
 > 事故复盘：[TROUBLESHOOTING.md](TROUBLESHOOTING.md)。
