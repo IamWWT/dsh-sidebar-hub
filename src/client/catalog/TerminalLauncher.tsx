@@ -35,10 +35,9 @@ export function TerminalLauncher({ title, actions }: { title: string; actions: T
       : choices.shells.length === 0 ? [{ id: '$empty', label: t('terminal.empty'), disabled: true }]
         : choices.shells.map(shell => ({ id: shell.path, label: shell.name }));
   return <div className="catalogTerminal">
-    <button type="button" className="catalogItem" data-kind="terminal" data-official="true" onClick={() => actions.launch()}>
+    <button type="button" className="catalogItem" data-kind="terminal" onClick={() => actions.launch()}>
       <span className="catalogItemTile" aria-hidden="true">›_</span>
       <span className="catalogItemLabel">{title}</span>
-      <span className="catalogItemOfficial">{t('catalog.official')}</span>
     </button>
     <Menu open={visible} portal autoFocus align="end" items={items} selectedId={choices?.selectedShell}
       onClose={() => setVisible(false)} onSelect={path => {

@@ -364,3 +364,44 @@ legacy 迁移 `importLegacyDocument()`（`deepseek-harness/packages/settings/set
 **教训**：测试实例的 plugin 集合决定验收覆盖面 —— 最小 profile 只适合验证「框架自身」，
 条目级断言（语音/工作台/数独/浏览器）必须在装齐插件的实例（或 3082 授权后）验收；
 跑 `ui-acceptance.mjs` 前先 `pnpm dsh plugin --profile web list` 核对在装插件，避免把环境缺项误读为插件回归。
+
+## 2026-09-30：v0.1.4 分类页出现「聊天/计划/变更审查」等官方起始页没有的入口 —— entries() 是类型注册表，不是入口
+
+**现象**：3084 复验截图与提交说明显示「官方」组出现 subagentchat（聊天）、plan（计划）、
+changes-review（变更审查）等入口，用户质疑「你确认官方已经有那么多你弄的机会？聊天？人物详情？」。
+
+**根因**：v0.1.4 R1 把发现源定为 `sidebarRightTabs.entries()` ∪ `guide()`，但 `entries()` 的语义是
+**标签类型注册表**（VS Code editor-resolver：id/kind/patterns/canOpen/priority/guide[]），
+它列出的是「谁认领哪种 address、谁渲染」，不是「起始页该给用户展示什么入口」。
+plan/changes-review/subagentchat/text 这类纯资源查看器/内部类型只有 tab 定义、没有 guide 盒子，
+官方起始页从不展示它们——v0.1.4 把它们当入口灌进分类页，是插件自己的发明，违背「有什么放什么」。
+（「人物详情」经全局搜索（源码/node_modules/转义 unicode/settings.yaml）确认不存在，属 entries() 灌入的
+内部类型在用户界面的误读。）
+
+**修复**：v0.1.5 发现源改回 **guide-only**（`guide()` = 类型声明的引导页入口盒子，官方起始页唯一
+公开入口机制），kind/title/description 原样透传；撤销 `@deepseek-ai/` 前缀官方判定、自动归组与
+「官方」角标；归组只认显式规则（出厂映射 + 用户编辑），未登记落「其他」；漂移对账对象 = guide 入口集。
+3084 复验 2b2「无内部 tab 类型混入分类页」PASS。
+
+**教训**：区分「注册表（registry）语义」与「入口（guide box）语义」——前者描述能力归属，
+后者描述用户在起始页能看到什么；对外展示的入口只能来自 guide。任何「官方性推断」（前缀/包名/优先级）
+都是插件替用户做主，用户明确拒绝（「不要改变官方的直接有什么就放什么就好了」）。
+
+## 2026-09-30：3082 重启后官方组只见 2 个入口 —— 第三个（浏览器）被上游 web profile 禁用，属预期
+
+**现象**：0.1.5 装入 3082 并重启后，用户反馈「没看到三个官方，只看到2个」。
+
+**根因**：官方 guide 入口共 3 个——工作区文件（files，order 10）、新建终端（terminal，order 20）、
+浏览器（browser，order 30）；上游 0.2.0 web profile 默认禁用 `ui-sidebar-browser`
+（`disabled: profileName !== 'desktop'`），故其 guide 盒子不出现，分类页只显示 files+terminal。
+这与「有什么放什么」一致：浏览器不在官方 web 起始页上，分类页就不该凭空出现它（v0.1.4
+entries() 路径会显示，但那正是被纠正的发明行为）。
+
+**修复**：应用 R4 补丁（用户反馈即启用信号）：3082 `cordis.patch.yml` 追加
+`- id: ui-sidebar-browser` / `disabled: false`（备份 `cordis.patch.yml.bak-browser-20260930-210709`，
+补丁 23 个顶层条目、无重复 id；含用户自加的 dsh-opscrew 机器级条目）；重启 3082 后官方组出现
+第三个入口「浏览器」（iframe 形态）。若漂移基线先于补丁写入，重启后会弹「新增：浏览器 → 官方」
+提醒，属 R2 正常行为，点「知道了」即可。
+
+**教训**：官方 web 起始页有 3 个官方入口是「官方想展示的」；分类页如实呈现即可，缺哪个先查
+上游对应插件是否启用（profile/bundle 层），不要用插件自动补位。

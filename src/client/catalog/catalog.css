@@ -191,26 +191,11 @@
   line-height: 1;
 }
 
-/* 官方条目：用品牌色描边点出来，而不是只靠一个灰标签 */
-.catalogItem[data-official='true'] {
-  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 45%, var(--dsw-alias-border-l1));
-}
-
 .catalogItemLabel {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.catalogItemOfficial {
-  flex: none;
-  padding: 0 6px;
-  border-radius: 5px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);
-  color: var(--dsw-alias-brand-primary);
-  font: var(--hub-font-tiny);
 }
 
 .catalogEmpty {

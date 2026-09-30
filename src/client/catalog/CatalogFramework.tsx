@@ -170,7 +170,6 @@ export function CatalogFramework(props: CatalogProps): ReactNS.ReactElement {
               <span className="catalogDriftName">{entry.title}</span>
               <code className="catalogDriftKind">{entry.kind}</code>
               <span className="catalogDriftTarget">→ {entry.groupTitle}</span>
-              {entry.official && <span className="catalogItemOfficial">{t('catalog.official')}</span>}
             </div>
           ))}
           {drift.removed.map(entry => (
@@ -268,7 +267,6 @@ export function CatalogFramework(props: CatalogProps): ReactNS.ReactElement {
                   className="catalogItem"
                   title={item.description ?? item.title}
                   data-kind={item.kind}
-                  data-official={item.official ? 'true' : undefined}
                   data-drop={dropAt === `${group.id}:${item.kind}` ? 'true' : undefined}
                   draggable
                   onDragStart={(event) => {
@@ -295,7 +293,6 @@ export function CatalogFramework(props: CatalogProps): ReactNS.ReactElement {
                   <span className="catalogItemTile" aria-hidden="true">{tileGlyph(item.title)}</span>
                   <span className="catalogItemLabel">{item.title}</span>
                   {newKinds.has(item.kind) && <span className="catalogItemNew" title={t('catalog.driftNewHint')}>{t('catalog.driftNew')}</span>}
-                  {item.official && <span className="catalogItemOfficial">{t('catalog.official')}</span>}
                 </button>
               ))}
               {group.items.length === 0 && (

@@ -221,7 +221,8 @@ const catalog = await evalJs(`(() => [...document.querySelectorAll('.catalogGrou
   items: [...g.querySelectorAll('.catalogItem')].map(i => ({
     kind: i.getAttribute('data-kind'),
     label: i.querySelector('.catalogItemLabel')?.textContent?.trim() ?? '',
-    official: !!i.querySelector('.catalogItemOfficial'),
+    // v0.1.5：不再有「官方」角标（不做官方性判定）
+    official: false,
   })),
 })))()`);
 const titles = (catalog ?? []).map(g => g.title);
@@ -230,7 +231,14 @@ check('2a. 默认四组齐备（v0.8 删工程与任务、浏览与工具改名�
   DEFAULT_GROUPS.every(t => titles.includes(t)) && !titles.includes('工程与任务'),
   `实际：${titles.join(' / ')}`);
 const allItems = (catalog ?? []).flatMap(g => g.items);
-check('2b. 条目来自自动发现（≥11 条）', allItems.length >= 11, `${allItems.length} 条`);
+// v0.1.5：条目数取决于该实例装了哪些插件（最小 profile 自然少）——只断言「非空」。
+check('2b. 条目来自自动发现（非空）', allItems.length > 0 && allItems.every(i => typeof i.kind === 'string' && i.kind !== ''), `${allItems.length} 条：${allItems.map(i => i.kind).join(',')}`);
+// v0.1.5 回归防线：只有 tab 定义、没有 guide 盒子的**内部类型**不得出现在分类页
+// （v0.1.4 读 entries() 时「聊天/计划/变更审查」被当入口灌进来的正是这一类）。
+const INTERNAL_KINDS = ['plan', 'changes-review', 'subagentchat', 'text', 'guide'];
+const leaked = allItems.filter(i => INTERNAL_KINDS.includes(i.kind)).map(i => i.kind);
+check('2b2. 无内部 tab 类型混入分类页（v0.1.5 guide-only 发现）', leaked.length === 0,
+  leaked.length === 0 ? `全部 ${allItems.length} 条均来自 guide 入口` : `混入：${leaked.join(',')}`);
 const officialGroup = (catalog ?? []).find(g => g.title === '官方');
 const terminalItem = (catalog ?? []).flatMap(g => g.items).find(i => i.kind === 'terminal');
 const browserItem = (catalog ?? []).flatMap(g => g.items).find(i => i.kind === 'browser');
@@ -238,12 +246,10 @@ const toolsGroup = (catalog ?? []).find(g => g.title === '工具');
 check('2c. 语音工具在「工具」组（v0.8 改名）',
   toolsGroup?.items.some(i => i.kind === 'audio-transcriber'),
   `工具组：${(toolsGroup?.items ?? []).map(i => i.label).join(',')}`);
-check('2d. 官方 Files/终端/浏览器同处「官方」组且带「官方」标记',
-  officialGroup?.items.some(i => i.kind === 'files' && i.official) === true
-  && terminalItem !== undefined && terminalItem.official === true
+check('2d. 官方 Files/终端 同处「官方」组（浏览器仅在其插件启用时出现）',
+  officialGroup?.items.some(i => i.kind === 'files') === true
   && officialGroup?.items.some(i => i.kind === 'terminal') === true
-  && browserItem !== undefined && browserItem.official === true
-  && officialGroup?.items.some(i => i.kind === 'browser') === true,
+  && (browserItem === undefined || officialGroup?.items.some(i => i.kind === 'browser') === true),
   JSON.stringify(officialGroup?.items ?? []));
 const otherGroup = (catalog ?? []).find(g => g.title === '其他');
 console.log(`     其他组（未登记 kind）：${(otherGroup?.items ?? []).map(i => `${i.label}(${i.kind})`).join(', ') || '（无）'}`);

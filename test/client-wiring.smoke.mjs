@@ -230,28 +230,30 @@ const ctx = {
 };
 
 // 预置：三个自研工作台 + 语音工具 + 官方 files/terminal/browser + 小游戏（模拟其它插件先注册）
-// v0.1.4 R1：官方 kind 用 @deepseek-ai/ 前缀 id（真实 DSH 的官方包命名），
-// 自研插件用 seed/ 前缀（第三方 → 非官方）。
-for (const [kind, title, order, official = false] of [
+// v0.1.5：入口**只**来自 guide 盒子（官方起始页能力的唯一公开来源）——定义里带 guide 才可见。
+for (const [kind, title, order] of [
   ['daily-workbench', '个人工作台', 10],
   ['troubleshoot-workbench', '故障排查工作台', 11],
   ['trading-workbench', '交易工作台', 12],
+  ['opscrew-workbench', '应急指挥工作台', 13],        // v0.1.6：应急指挥（dsh-opscrew）归工作台
   ['audio-transcriber', '语音转文字', 40],
-  ['files', '文件', 5, true],
-  ['terminal', '终端', 6, true],                     // 官方内置终端（v0.2 起转发）
-  ['browser', '浏览器', 7, true],                    // 官方内置浏览器（v0.5 起转发）
-  ['guide', '开始', 3, true],                        // 框架内部 kind → 映射表 hidden
-  ['text', '文本查看器', 4, true],                    // 框架内部 kind → 映射表 hidden
+  ['files', '文件', 5],
+  ['terminal', '终端', 6],                           // 官方内置终端（v0.2 起转发）
+  ['browser', '浏览器', 7],                          // 官方内置浏览器（v0.5 起转发）
+  ['guide', '开始', 3],                              // 框架内部 kind → 映射表 hidden
+  ['text', '文本查看器', 4],                          // 框架内部 kind → 映射表 hidden
   ['minesweeper', '🎮 扫雷', 80],
   ['sudoku', '🧩 数独', 81],
-  ['mystery-plugin', '未知插件', 90],
+  ['mystery-plugin', '未知插件', 90],                 // 第三方、无规则 → 「其他」
 ]) {
-  registry.register({ id: official ? `@deepseek-ai/${kind}` : `seed/${kind}`, kind, title: () => title, guide: [{ order, title: () => title }] });
+  registry.register({ id: `seed/${kind}`, kind, title: () => title, guide: [{ order, title: () => title }] });
 }
-// v0.1.4 R1/R3 关键形态：DSH 升级后新出现的 kind **只有 tab 定义、没有 guide 入口**
-// （0.2.x 里浏览器能力正是这样消失的）——只能靠 entries() 发现。
-registry.register({ id: '@deepseek-ai/fresh-official', kind: 'fresh-official', title: () => '新官方能力' });
-registry.register({ id: 'fresh-plugin', kind: 'fresh-plugin', title: () => '新插件入口' });
+// v0.1.5 关键回归：**只有 tab 定义、没有 guide 盒子**的东西——纯资源查看器/内部类型
+// （0.2.x 的 plan/changes-review/subagentchat 就是这类）——不得被当成入口灌进分类页。
+// 这正是 v0.1.4 读 entries() 时「聊天空降官方组」的根因。
+for (const kind of ['fresh-official', 'fresh-plugin', 'plan', 'changes-review', 'subagentchat']) {
+  registry.register({ id: `@deepseek-ai/${kind}`, kind, title: () => `内部类型 ${kind}` });
+}
 
 plugin.apply(ctx);
 
@@ -333,29 +335,34 @@ for (const title of ['工作台', '工具', '游戏', '官方', '其他']) {
   assert.ok(byTitle(title) !== undefined, `应有「${title}」分组`);
 }
 assert.ok(byTitle('工程与任务') === undefined, 'v0.8 起默认无「工程与任务」分组');
-assert.deepEqual(labelsIn('工作台').sort(), ['个人工作台', '交易工作台', '故障排查工作台'].sort());
+assert.deepEqual(labelsIn('工作台').sort(), ['个人工作台', '交易工作台', '故障排查工作台', '应急指挥工作台'].sort(), 'v0.1.6：opscrew-workbench（应急指挥工作台）归「工作台」组');
 assert.deepEqual(labelsIn('工具').sort(), ['语音转文字'].sort(), '「浏览与工具」v0.8 改名「工具」');
 assert.deepEqual(labelsIn('游戏').sort(), ['🧩 数独', '🎮 扫雷'].sort(), '扫雷与数独应落在默认「游戏」组');
-assert.deepEqual(labelsIn('官方').sort(), ['文件', '终端', '浏览器', '新官方能力'].sort(), '官方内置终端/浏览器/文件与「无 guide 的官方新 kind」同处「官方」组（R1 发现 + R3 自动归组）');
-assert.deepEqual(labelsIn('其他').sort(), ['新插件入口', '未知插件'].sort(), '未登记第三方 kind 自动落「其他」（R3）');
+assert.deepEqual(labelsIn('官方').sort(), ['文件', '终端', '浏览器'].sort(),
+  'v0.1.5：官方组只由**显式规则**填充（files/terminal/browser），不做前缀推断');
+assert.deepEqual(labelsIn('其他').sort(), ['未知插件'].sort(), '未登记 kind 一律落「其他」，不再按官方性分流');
+// v0.1.5 回归防线：只有 tab 定义、没有 guide 盒子的内部类型不得出现在任何分组。
+const allLabels = groups.flatMap(group => labelsIn(titleOf(group)));
+for (const leaked of ['内部类型 fresh-official', '内部类型 fresh-plugin', '内部类型 plan', '内部类型 changes-review', '内部类型 subagentchat']) {
+  assert.ok(!allLabels.includes(leaked), `无 guide 盒子的内部类型不得进入分类页：${leaked}`);
+}
 // 「游戏」组现在有默认成员（扫雷、数独），不再是空分组。
 assert.ok(!groups.map(titleOf).some(title =>
   labelsIn(title).includes('开始') || labelsIn(title).includes('文本查看器')), 'hidden 条目不应出现');
 
-// ── 5) 点条目 → openTab(kind)；官方条目带标记 ───────────────────────────
+// ── 5) 点条目 → openTab(kind)（v0.1.5 起不再有「官方」角标：不做官方性判定）──
 // v0.6 起无 hub-* 条目，改用「语音转文字」（自研语音插件入口）验证点击转发。
 const voiceItem = itemsOf(byTitle('工具')).find(item => item.props['data-kind'] === 'audio-transcriber');
 voiceItem.props.onClick();
 assert.deepEqual(opened.slice(-1), ['audio-transcriber'], '点条目应 openTab 对应 kind');
 const terminalItem = itemsOf(byTitle('官方')).find(item => item.props['data-kind'] === 'terminal');
-assert.ok(terminalItem !== undefined, '官方终端条目应出现在「官方」组');
-assert.ok(terminalItem.children.some(c => typeof c === 'object' && c.props?.className === 'catalogItemOfficial'),
-  '官方终端条目应带「官方」标记');
+assert.ok(terminalItem !== undefined, '官方终端条目应出现在「官方」组（显式规则）');
+assert.ok(!terminalItem.children.some(c => typeof c === 'object' && c.props?.className === 'catalogItemOfficial'),
+  'v0.1.5 起条目不再带「官方」角标');
 terminalItem.props.onClick();
 assert.deepEqual(opened.slice(-1), ['terminal'], '点官方终端条目应 openTab("terminal")（转发官方）');
 const filesItem = itemsOf(byTitle('官方')).find(item => item.props['data-kind'] === 'files');
-assert.ok(filesItem !== undefined && filesItem.children.some(c => typeof c === 'object' && c.props?.className === 'catalogItemOfficial'),
-  '官方 Files 条目应带「官方」标记');
+assert.ok(filesItem !== undefined, '官方 Files 条目应在「官方」组');
 
 // ── 6) 折叠：点分组头 → 快照里 collapsed（内存态，settings 未绑定）───────
 const headOf = (title) => byTitle(title).children
@@ -427,8 +434,9 @@ assert.ok(guideFace.persistence() === 'host', '可写时持久化状态为 host'
 // 让后续按序号断言的写序列保持原索引。
 assert.equal(writes.length, 1, '首跑应静默初始化漂移基线（恰好一次写）');
 assert.equal(writes[0][0].path[0], 'drift', '首跑基线应写 drift 桶');
-assert.ok(Object.keys(writes[0][0].value.kinds).includes('fresh-official'), '基线应覆盖「只有 tab 定义、没有 guide 入口」的新 kind（R1 发现路径）');
 assert.ok(Object.keys(writes[0][0].value.kinds).includes('terminal'), '基线应含常规 kind');
+assert.ok(!Object.keys(writes[0][0].value.kinds).includes('fresh-official'),
+  'v0.1.5：基线只记 guide 入口集，无 guide 盒子的内部类型不进基线');
 assert.equal(guideFace.hooks.drift.getSnapshot().added.length, 0, '首跑初始化不产生提醒');
 writes.length = 0;
 
@@ -566,19 +574,23 @@ const cardGroupsBefore = cardFace.hooks.groups.getSnapshot().length;
 cardFace.addGroup('卡片新建');
 assert.equal(cardFace.hooks.groups.getSnapshot().length, cardGroupsBefore + 1, '卡片新建分组应进分组源');
 
-// ── 9) v0.1.4 R1/R2/R3：升级漂移（新发现自动归组 + 提醒 + ack 基线滚动）──
+// ── 9) v0.1.4 R2（v0.1.5 改为基于 guide 入口集）：升级漂移提醒 + ack 基线滚动 ──
 const driftView = () => guideFace.hooks.drift.getSnapshot();
 assert.deepEqual(driftView(), { added: [], removed: [] }, '基线 = 当前快照时无提醒');
 
-// 模拟 DSH 升级：新能力被注册（有 tab 定义、无 guide 入口 —— 正是 0.2.x 的形态）
-registry.register({ id: '@deepseek-ai/upgraded-cap', kind: 'upgraded-cap', title: () => '升级新增能力' });
-registry.register({ id: 'vendor-cap', kind: 'vendor-cap', title: () => '第三方新入口' });
-assert.deepEqual(driftView().added.map(a => a.kind).sort(), ['upgraded-cap', 'vendor-cap'], '新发现能力应进入提醒');
-assert.equal(driftView().added.find(a => a.kind === 'upgraded-cap').groupTitle, '官方', '官方新能力应自动归入「官方」组（R3）');
-assert.equal(driftView().added.find(a => a.kind === 'upgraded-cap').official, true, '官方包能力应标记官方');
-assert.equal(driftView().added.find(a => a.kind === 'vendor-cap').groupTitle, '其他', '未登记第三方新入口自动落「其他」（R3）');
-assert.ok(labelsIn('官方').includes('升级新增能力'), '新官方能力应出现在「官方」组');
+// 模拟 DSH 升级：新能力带着 guide 盒子出现（= 用户真的会在起始页看到它）
+registry.register({ id: '@deepseek-ai/upgraded-cap', kind: 'upgraded-cap', title: () => '升级新增能力', guide: [{ order: 95, title: () => '升级新增能力' }] });
+registry.register({ id: 'vendor-cap', kind: 'vendor-cap', title: () => '第三方新入口', guide: [{ order: 96, title: () => '第三方新入口' }] });
+assert.deepEqual(driftView().added.map(a => a.kind).sort(), ['upgraded-cap', 'vendor-cap'], '新出现的入口应进入提醒');
+assert.equal(driftView().added.find(a => a.kind === 'upgraded-cap').groupTitle, '其他',
+  'v0.1.5：不做官方性推断，未登记 kind 一律落「其他」');
+assert.equal(driftView().added.find(a => a.kind === 'upgraded-cap').official, undefined, 'v0.1.5 起提醒项不再带 official 字段');
+assert.ok(labelsIn('其他').includes('升级新增能力'), '新入口应出现在「其他」组（无显式规则）');
 assert.ok(labelsIn('其他').includes('第三方新入口'), '第三方新入口应出现在「其他」组');
+
+// 只有 tab 定义、没有 guide 盒子的内部类型：既不进分类页，也不进漂移提醒
+registry.register({ id: '@deepseek-ai/plan', kind: 'plan-2', title: () => '内部查看器' });
+assert.ok(!driftView().added.some(a => a.kind === 'plan-2'), '无 guide 盒子的类型不得进入漂移提醒');
 
 // 提醒横幅出现在分类页；点「知道了」→ 基线滚动、提醒消失
 let driftTree = render();
@@ -591,17 +603,18 @@ assert.deepEqual(driftView(), { added: [], removed: [] }, '「知道了」后提
 const ackWrite = writes[writes.length - 1];
 assert.equal(ackWrite[0].path[0], 'drift', 'ack 应写 drift 桶');
 assert.ok(ackWrite[0].value.kinds['upgraded-cap'] !== undefined, 'ack 后的新基线应包含新能力（升级后不再反复提醒）');
+assert.equal(ackWrite[0].value.kinds['upgraded-cap'].official, undefined, 'v0.1.5 起基线记录只留 title');
 assert.ok(findIn(render(), node => node.props?.className === 'catalogDriftHead')[0] === undefined, 'ack 后横幅应从页面消失');
 
 // 能力移除（DSH 升级移除/插件卸载）也要提醒；再次 ack 后才安静
-const disposeTemp = registry.register({ id: 'temp-cap', kind: 'temp-cap', title: () => '临时能力' });
-assert.deepEqual(driftView().added.map(a => a.kind), ['temp-cap'], '此前未见过的新能力再次进入提醒');
+const disposeTemp = registry.register({ id: 'temp-cap', kind: 'temp-cap', title: () => '临时能力', guide: [{ order: 97, title: () => '临时能力' }] });
+assert.deepEqual(driftView().added.map(a => a.kind), ['temp-cap'], '此前未见过的新入口再次进入提醒');
 guideFace.ackDrift();
 assert.deepEqual(driftView(), { added: [], removed: [] }, 'ack 后回到安静态');
 disposeTemp();
-assert.deepEqual(driftView().removed.map(r => r.kind), ['temp-cap'], '被移除的能力应出现在提醒');
+assert.deepEqual(driftView().removed.map(r => r.kind), ['temp-cap'], '被移除的入口应出现在提醒');
 assert.equal(driftView().removed[0].title, '临时能力');
 guideFace.ackDrift();
 assert.deepEqual(driftView(), { added: [], removed: [] }, '用户确认移除提醒后保持安静');
 
-console.log('smoke: client wiring OK（1 工厂 / 0 hub-* 类型 / 0 正文 / 1 guide chain / 分组顺序与点击 / 官方终端·浏览器转发 / 拖拽与排序 / settings 写回与恢复默认 / 设置卡片折叠与表单 / v0.1.4 漂移发现·自动归组·提醒与 ack）');
+console.log('smoke: client wiring OK（1 工厂 / 0 hub-* 类型 / 0 正文 / 1 guide chain / guide-only 发现（无 guide 的内部类型不入页） / 显式规则归组 / 点击转发 / 拖拽与排序 / settings 写回与恢复默认 / 设置卡片折叠与表单 / v0.1.5 漂移提醒与 ack）');

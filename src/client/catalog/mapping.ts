@@ -7,26 +7,21 @@
  * `SidebarRightTabs.guide()`），再用映射表归组；未登记的 kind 落「其他」组。
  */
 import {
-  OFFICIAL_KINDS, OTHER_GROUP_ID, OTHER_GROUP_TITLE, PROTECTED_GROUP_IDS, RENAME_LOCKED_GROUP_IDS, toneOf,
+  OTHER_GROUP_ID, OTHER_GROUP_TITLE, PROTECTED_GROUP_IDS, RENAME_LOCKED_GROUP_IDS, toneOf,
   type CategoryConfig,
 } from '../../shared/catalog-config.ts';
 
 export {
-  DEFAULT_GROUPS, DEFAULT_ENTRY_RULES, GROUP_TONES, OFFICIAL_KINDS, OTHER_GROUP_ID, OTHER_GROUP_TITLE,
+  DEFAULT_GROUPS, DEFAULT_ENTRY_RULES, GROUP_TONES, OTHER_GROUP_ID, OTHER_GROUP_TITLE,
   PROTECTED_GROUP_IDS, RENAME_LOCKED_GROUP_IDS, defaultConfig, toneOf,
   type CategoryConfig, type CategoryEntryRule, type CategoryGroup,
 } from '../../shared/catalog-config.ts';
 
-/** 自动发现到的一个入口（来自注册表；v0.1.4 起兼读 `entries()` 全量定义）。 */
+/** 自动发现到的一个入口（来自官方 guide 盒子；v0.1.5 起只此一路来源）。 */
 export interface DiscoveredEntry {
   kind: string;
   title: string;
   description?: string;
-  /**
-   * 是否官方能力（v0.1.4，spec 003 R3）：定义实现 id 以 `@deepseek-ai/` 开头。
-   * 未登记归属的官方 kind 自动落「官方」组；缺省/第三方走「其他」兜底。
-   */
-  official?: boolean;
 }
 
 /** 一个渲染用的条目。 */
@@ -34,7 +29,6 @@ export interface CatalogItem {
   kind: string;
   title: string;
   description?: string;
-  official: boolean;
 }
 
 /** 一个渲染用的分组。 */
@@ -69,8 +63,6 @@ export function resolveCatalog(discovered: readonly DiscoveredEntry[], config: C
     items: [],
   }));
   const byId = new Map(groups.map(group => [group.id, group]));
-  /** 官方兜底组（v0.1.4 R3）：未登记归属的官方 kind 落这里，而非「其他」。 */
-  const officialGroup = groups.find(group => group.id === 'official');
   const others: CatalogItem[] = [];
 
   for (const entry of discovered) {
@@ -80,13 +72,11 @@ export function resolveCatalog(discovered: readonly DiscoveredEntry[], config: C
       kind: entry.kind,
       title: rule?.label !== undefined && rule.label !== '' ? rule.label : entry.title,
       description: entry.description,
-      official: OFFICIAL_KINDS.has(entry.kind) || entry.official === true,
     };
-    // 归属优先级：用户显式规则 > 官方自动归组（R3）> 「其他」兜底。
-    const explicit = rule?.groupId;
-    const target = explicit !== undefined
-      ? byId.get(explicit)
-      : (item.official ? officialGroup : undefined);
+    // 归属只认**显式规则**（出厂映射 + 用户编辑）；没有规则 → 「其他」。
+    // v0.1.5：不再按 `@deepseek-ai/` 前缀猜「官方」并自动归组（那是插件自己的
+    // 判断，会凭空改变官方入口的位置；用户 2026-09-30 纠正）。
+    const target = rule?.groupId === undefined ? undefined : byId.get(rule.groupId);
     if (target !== undefined) target.items.push(item);
     else others.push(item);
   }
@@ -113,11 +103,10 @@ export function resolveCatalog(discovered: readonly DiscoveredEntry[], config: C
   return groups;
 }
 
-/** 漂移提醒（v0.1.4 R2）：新增的一条能力（落点分组标题 = 自动归组结果）。 */
+/** 漂移提醒（v0.1.4 R2）：新增的一条能力（落点分组标题 = 显式规则解析结果）。 */
 export interface DriftAddedKind {
   kind: string;
   title: string;
-  official: boolean;
   groupTitle: string;
 }
 

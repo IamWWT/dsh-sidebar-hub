@@ -103,9 +103,11 @@ assert.equal(revived(base).entries['audio-transcriber'].groupId, 'browse-tools',
 
 // 7) v0.1.4 R2：drift 桶 —— base 是空基线（首跑触发静默初始化），用户层整值写入
 assert.deepEqual(revived(base).drift, { kinds: {}, ack: '' }, 'drift 出厂即空基线');
-const userDrift = { kinds: { terminal: { title: '终端', official: true } }, ack: 'terminal\u0000' };
+const userDrift = { kinds: { terminal: { title: '终端' } }, ack: 'terminal\u0000' };
 assert.deepEqual(revived(mergeLayers(base, { drift: userDrift })).drift, userDrift, '用户层 drift 整值保留');
 assert.deepEqual(revived(mergeLayers(base, { drift: { ack: 'sig' } })).drift, { kinds: {}, ack: 'sig' }, '部分 drift 由 schema 补默认值');
+assert.deepEqual(revived(mergeLayers(base, { drift: { kinds: { files: { title: '文件' } }, ack: 'x' } })).drift.kinds.files, { title: '文件' },
+  'v0.1.5：drift 记录只留 title（不再有 official）');
 
 await rm(outFile, { force: true });
 console.log('smoke: host settings OK（命名空间 / 出厂 base / 深合并 / 数组整桶替换 / 默认值补齐）');

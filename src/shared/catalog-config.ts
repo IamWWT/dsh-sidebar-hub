@@ -43,10 +43,12 @@ export interface CategoryConfig {
   drift?: CategoryDrift;
 }
 
-/** 漂移快照里的一个 kind 记录（title 仅用于提醒文案，不参与比对）。 */
+/**
+ * 漂移快照里的一个 kind 记录（v0.1.5：只留标题，用于提醒文案；
+ * 比对只按 kind 集合，标题变化不重复提醒）。
+ */
 export interface DriftKindRecord {
   title: string;
-  official: boolean;
 }
 
 /** 能力快照：kind → 记录；`ack` 为快照签名（用户「知道了」后写入）。 */
@@ -119,13 +121,17 @@ export const OTHER_GROUP_TITLE = '其他';
  *   分类框架只做入口编排。
  * - 终端（v0.2）与浏览器（v0.5）自官方内置起交还官方（kind=`terminal`/`browser`，
  *   builtin）并归**官方组**（与官方 Files 同组，恢复默认后保持一致）。
+ * - v0.1.5：归组**只**由本表 + 用户编辑决定，不再有「官方自动归组」的推断
+ *   （未登记 kind 一律落「其他」）。官方入口（files/terminal/browser…）在此显式列出。
  */
 export const DEFAULT_ENTRY_RULES: Record<string, CategoryEntryRule> = {
-  // 工作台（daily-workbench 由 personal-workbench 改名，v0.9 跟随其 kind）
+  // 工作台（daily-workbench 由 personal-workbench 改名，v0.9 跟随其 kind；
+  // opscrew-workbench = 应急指挥工作台，用户 2026-09-30 新增，v0.1.6 起归组）
   'daily-workbench': { groupId: 'workbench' },
   'troubleshoot-workbench': { groupId: 'workbench' },
   'trading-workbench': { groupId: 'workbench' },
   'report-studio': { groupId: 'workbench' },
+  'opscrew-workbench': { groupId: 'workbench' },
   // 浏览与工具
   'audio-transcriber': { groupId: 'browse-tools' },
   'audio-tts': { groupId: 'browse-tools' },
@@ -140,9 +146,6 @@ export const DEFAULT_ENTRY_RULES: Record<string, CategoryEntryRule> = {
   guide: { hidden: true },
   text: { hidden: true },
 };
-
-/** 官方内置 kind（条目上标「官方」）。terminal/browser 为官方内置终端/浏览器（v0.2/v0.5 起转发）。 */
-export const OFFICIAL_KINDS: ReadonlySet<string> = new Set(['files', 'text', 'guide', 'terminal', 'browser']);
 
 /** 默认配置（新副本，调用方可自由改）。 */
 export function defaultConfig(): CategoryConfig {

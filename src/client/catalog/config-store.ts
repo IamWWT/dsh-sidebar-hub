@@ -80,12 +80,10 @@ export interface CatalogConfigStore {
   /**
    * 写入漂移基线（v0.1.4 R2）：更新 settings 的 `drift` 桶
    * （首跑静默初始化 / 用户「知道了」确认）。
-   * @param kinds - 当前注册表能力快照（kind → 标题/官方标记）。
+   * @param kinds - 当前入口集快照（kind → 标题；v0.1.5 起只留标题）。
    * @param ack - 快照签名（仅比对用）。
    */
-  noteDrift(kinds: Record<string, { title: string; official: boolean }>, ack: string): void;
-  /** 恢复出厂分类（清空 settings 的 user 层，回落到组合 base）。 */
-  reset(): void;
+  noteDrift(kinds: Record<string, { title: string }>, ack: string): void;
 }
 
 /** 是否自有属性（不用 Object.hasOwn 以兼容旧运行时）。 */
@@ -139,14 +137,11 @@ function normalizeConfig(value: CategoryConfig | undefined): CategoryConfig | un
   // 漂移基线（v0.1.4）：缺字段/坏形状一律归位为空基线，绝不把脏数据传下去。
   let drift: CategoryConfig['drift'];
   if (typeof value.drift === 'object' && value.drift !== null) {
-    const kinds: Record<string, { title: string; official: boolean }> = {};
+    const kinds: Record<string, { title: string }> = {};
     if (typeof value.drift.kinds === 'object' && value.drift.kinds !== null) {
       for (const [kind, record] of Object.entries(value.drift.kinds)) {
         if (typeof record !== 'object' || record === null) continue;
-        kinds[kind] = {
-          title: typeof record.title === 'string' ? record.title : kind,
-          official: record.official === true,
-        };
+        kinds[kind] = { title: typeof record.title === 'string' ? record.title : kind };
       }
     }
     drift = {

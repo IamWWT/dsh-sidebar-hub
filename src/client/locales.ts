@@ -8,7 +8,6 @@ export type LocaleKey =
   | 'copied'
   | 'catalog.title'
   | 'catalog.reset'
-  | 'catalog.official'
   | 'catalog.empty'
   | 'catalog.hint'
   | 'catalog.addGroup'
@@ -77,7 +76,6 @@ const DICT: Record<'zh' | 'en', Record<LocaleKey, string>> = {
     mermaidZoomHint: '滚轮缩放 · 拖拽平移 · Esc 关闭',
     'catalog.title': '分类',
     'catalog.reset': '恢复默认',
-    'catalog.official': '官方',
     'catalog.empty': '暂无条目',
     'catalog.hint': '拖拽条目可调整分组与顺序',
     'catalog.addGroup': '新分组',
@@ -136,7 +134,6 @@ const DICT: Record<'zh' | 'en', Record<LocaleKey, string>> = {
     mermaidZoomHint: 'Scroll to zoom · drag to pan · Esc to close',
     'catalog.title': 'Categories',
     'catalog.reset': 'Restore defaults',
-    'catalog.official': 'Built-in',
     'catalog.empty': 'No entries',
     'catalog.hint': 'Drag entries to change group or order',
     'catalog.addGroup': 'New group',

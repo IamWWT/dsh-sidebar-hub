@@ -3,7 +3,7 @@
 ## 当前状态
 
 - 文档性质：历史记录（本插件进度真源；已完成部分已压成历史沿革，待办见「进行中 / 下一步」）
-- 对应版本：v0.1.4
+- 对应版本：v0.1.6
 - 状态：历史记录，结论按当时口径（当前有效能力见 index.md 与 REQUIREMENTS.md）
 - 维护者：AI + 用户
 
@@ -12,34 +12,34 @@
 
 ## 🔄 进行中（中断点）
 
-- **v0.1.4（spec 003，DSH 升级漂移同步）已实现并 `pnpm check` 全绿**（2026-09-30）：
-  R1 发现源升级（`entries()` ∪ `guide()`，官方性按 `@deepseek-ai/` 前缀）；R2 漂移检测
-  （settings `drift` 桶首跑静默初始化、新增/移除提醒、「知道了」滚动基线）；R3 官方能力
-  未登记归属时自动落「官方」组。0.1.x→0.2.0 升级后浏览器等原生能力从分类页消失的根因诊断见
-  `docs/specs/003-upgrade-drift-sync/spec.md` §0 与管理根 `ops/validation/dsh-test-boot-rc2.html`
-  （上游 web profile 默认禁用 `ui-sidebar-browser`，非本插件 bug）。
+- **v0.1.5（发现架构纠正）+ v0.1.6（opscrew 归组）已实现，`pnpm check` 全绿**（2026-09-30）：
+  - **纠正**（用户 2026-09-30 反馈「聊天/人物详情」等不该有的入口）：发现源改回 **guide-only**
+    ——分类页只呈现官方 `guide()` 引导盒子里真实存在的入口；v0.1.4 读 `entries()`（标签类型注册表）
+    把 plan/changes-review/subagentchat 等纯资源查看器灌进分类页，v0.1.5 起撤销，并删除
+    `@deepseek-ai/` 前缀官方推断、自动归组与「官方」角标（归组只认显式规则，未登记落「其他」）。
+  - 漂移检测（R2）对账对象 = guide 入口集（与分类页同源）；drift 记录收敛为 `{title}`。
+  - v0.1.6：出厂映射新增 `'opscrew-workbench': { groupId: 'workbench' }`（应急指挥工作台，
+    dsh-opscrew，用户新增）。
 - 中断点（接手先读）：
-  - 3084 测试实例端到端复验**已完成**（2026-09-30）：装 0.1.4 tgz + 重启 3084 + `ui-acceptance.mjs`
-    **23/35**（12 项 FAIL 全部归因最小 profile 缺插件/上游禁用浏览器，0.1.4 新能力项全 PASS；
-    截图 `docs/verify-v014/`，复盘见 TROUBLESHOOTING 2026-09-30 条目）。
-  - 3082（用户日常实例）：0.1.4 tgz **已装入 profile**（2026-09-30 用户执行安装命令，安装期因
-    故障工作台悬空 0.9.4 tgz 引用失败 → 应用户指示把 `dsh-troubleshoot-workbench` 从 3082 profile
-    彻底移除：deps/bundles + `cordis.patch.yml` 托管条目，备份 `*.bak-workbenchrm-20260930*`；
-    代码保留在 `dsh-plugins/dsh-troubleshoot-workbench/`，用户将重新设计）。
-    **仅剩重启**：`systemctl --user restart dsh-dev-web`（用户操作/同意）。
-  - 浏览器能力重启用（R4）= 用户批准事项：管理根 `ops/browser-web-enable-patch-20260930.md`
-    补丁（3082 profile `cordis.patch.yml` 加 `ui-sidebar-browser: disabled: false`），未批准不应用。
+  - **3082**：0.1.5 已由用户重启生效（用户确认「官方组只看到2个」= files+terminal，符合预期）；
+    0.1.6 已装入 profile（deps/bundles 引用 0.1.6 tgz）；**R4 浏览器补丁已应用**
+    （`cordis.patch.yml` 追加 `ui-sidebar-browser: disabled: false`，备份
+    `cordis.patch.yml.bak-browser-20260930-210709`；patch 现 23 个顶层条目，含用户自加的
+    `dsh-opscrew` 机器级条目）。**仅剩**：`systemctl --user restart dsh-dev-web`（用户操作/同意）
+    → 官方组出现第三个入口「浏览器」、工作台组出现「应急指挥工作台」；若基线先于补丁写入，
+    重启后分类页会弹漂移提醒「新增：浏览器 → 官方」（R2 正常行为，点「知道了」即可）。
+  - 3084 复验（0.1.5）：`ui-acceptance.mjs` **26/36**，关键项全 PASS：2b2「无内部 tab 类型
+    混入分类页」、2d「官方组 = files+terminal（浏览器未启用时）」；截图 `docs/verify-v015/`。
+  - 故障工作台已从 3082 移除（2026-09-30，用户指示；代码保留待重新设计）。
 
 ## ⏭ 下一步 + 待确认
 
-- 重启 3082（用户操作/同意）：`systemctl --user restart dsh-dev-web` → 0.1.4 首跑静默初始化
-  漂移基线（无横幅）；此后 DSH 升级/插件增删导致入口变化时，分类页自动提醒（新增/移除 + 落点分组）。
-- 若用户要浏览器入口回到 3082 侧栏：先应用 R4 补丁（`ops/browser-web-enable-patch-20260930.md`）
-  再重启（web profile 为 iframe 形态浏览器）。
-- 用户确认 3082 在 0.1.4 下正常后：删旧版 tgz（0.1.3），只留 profile 引用的 0.1.4
-  （AGENTS 铁律：每插件一份 tgz）。
-- `dsh-troubleshoot-workbench` 已按用户指示从 3082 profile 移除（2026-09-30；代码保留在本仓待重新设计，
-  见根 `progress.md` 索引）。
+- 重启 3082（用户操作/同意）：`systemctl --user restart dsh-dev-web` → 期待：
+  分类页「官方」组 = 工作区文件 / 新建终端 / **浏览器**（R4 补丁生效）；
+  「工作台」组出现**应急指挥工作台**（opscrew-workbench 归组规则随 0.1.6 生效）。
+- 若重启后首次进分类页弹漂移提醒（浏览器/应急指挥为新增）→ 属预期，点「知道了」写入新基线。
+- 用户确认 3082 在 0.1.6 下正常后：无遗留旧 tgz（0.1.3/0.1.5 已删，0.1.4 早删），
+  目录只留 0.1.6（AGENTS 铁律）。
 
 ## 历史沿革（v0.2–v0.9，压成 5 条；逐条过程见 TROUBLESHOOTING.md 与 `specs/002-*/`）
 

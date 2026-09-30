@@ -36,9 +36,12 @@ export interface HubSettingsEntry {
   hidden: boolean;
 }
 
-/** 漂移基线（存储形态；v0.1.4 能力漂移检测，spec 003 R2）。 */
+/**
+ * 漂移基线（存储形态；v0.1.4 能力漂移检测，spec 003 R2）。
+ * v0.1.5：每项只留标题（比对只按 kind 集合）。
+ */
 export interface HubSettingsDrift {
-  kinds: Record<string, { title: string; official: boolean }>;
+  kinds: Record<string, { title: string }>;
   ack: string;
 }
 
@@ -89,7 +92,6 @@ export const HubSettingsSchema = z.object({
   drift: z.object({
     kinds: z.dict(z.object({
       title: z.string().default(''),
-      official: z.boolean().default(false),
     })).default({}),
     ack: z.string().default(''),
   }).default({ kinds: {}, ack: '' }),

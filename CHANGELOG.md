@@ -1,3 +1,35 @@
+## 0.1.6 · 2026-09-30
+
+**出厂映射补充 + R4 应用**（承接 0.1.5 的 guide-only 纠正）：
+
+- 出厂映射表新增 `'opscrew-workbench': { groupId: 'workbench' }` —— 应急指挥工作台
+  （`dsh-opscrew`，用户 2026-09-30 新增，kind=`opscrew-workbench`）归「工作台」组；
+  冒烟测试同步加种子断言。
+- 交付状态：0.1.5（guide-only 纠正）与 0.1.6 均已装入 3082 profile（0.1.5 由用户重启后生效）；
+  R4 浏览器补丁已按用户指示应用（`cordis.patch.yml` 追加 `ui-sidebar-browser: disabled: false`，
+  备份 `cordis.patch.yml.bak-browser-20260930-210709`）；**重启 3082 后生效**：
+  官方组应出现第三个入口「浏览器」，工作台组出现「应急指挥工作台」。
+- 旧 tgz（0.1.3/0.1.5）已按「每插件一份」规则删除，目录只留 0.1.6。
+
+## 0.1.5 · 2026-09-30
+
+**发现架构纠正（用户 2026-09-30 反馈：分类页出现「聊天/人物详情」等不该有的入口）**：
+
+- **发现源改回 guide-only**：分类页只呈现官方 `guide()` 引导盒子里真实存在的入口
+  （kind/title/description 原样透传）。v0.1.4 读 `entries()`（**标签类型注册表**：VS Code
+  editor-resolver 语义，谁认领哪种 address、谁渲染）会把纯资源查看器/内部类型
+  （plan、changes-review、subagentchat、text…）当成入口灌进分类页——官方起始页根本没有它们。
+- **撤销 R3 官方推断**：删除 `@deepseek-ai/` 前缀判定、自动归「官方」组与「官方」角标
+  （含 TerminalLauncher 硬编码角标、CSS 规则、locale 键）。归组只认显式规则
+  （出厂映射 + 用户编辑），未登记 kind 一律落「其他」。官方入口 files/terminal/browser
+  在出厂表显式列出，浏览器是否出现由官方是否启用其插件决定（R4 补丁）。
+- 漂移检测（R2）对账对象改为 guide 入口集；drift 记录收敛为 `{title}`（不再存 official）。
+- 测试：client-wiring 冒烟重写（guide-only 发现、无 guide 的内部类型不入页/不进基线/不进提醒、
+  显式规则归组）；ui-acceptance 新增 2b2 内部类型混入守卫；host-settings drift 形状断言更新；
+  `pnpm check` 全绿。
+- 3084 复验：`ui-acceptance.mjs` 26/36，关键项 PASS——2b2「无内部 tab 类型混入分类页」、
+  2d「官方组 = files+terminal（浏览器未启用时）」；截图 `docs/verify-v015/`。
+
 ## 0.1.4 · 2026-09-30
 
 **DSH 升级漂移同步（spec 003，R1–R3）**：DSH 升级引入/移除原生能力后，分类页不再「静默变化」。

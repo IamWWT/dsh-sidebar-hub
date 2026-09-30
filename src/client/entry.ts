@@ -89,60 +89,33 @@ interface SnapshotSource<T> {
   subscribe(listener: () => void): () => void;
 }
 
-/** 官方实现前缀：定义 id 以此开头即官方能力（与 `OFFICIAL_KINDS` 互为补充）。 */
-const OFFICIAL_ID_PREFIX = '@deepseek-ai/';
-
 /**
- * 读一次注册表（v0.1.4 R1）：`entries()` 全量在效定义 ∪ `guide()` 引导条目，
- * 按 kind 去重。上游新引入的能力类型**即使没有引导条目**也会被发现；
- * 旧宿主没有 `entries()` 时退回 guide-only（行为与 v0.1.3 一致）。
+ * 读一次注册表（v0.1.5 起）：**只读 `guide()`**——即官方「起始页能力入口」的
+ * 唯一公开来源（每个 tab 类型用 `guide[]` 声明自己是否在引导页给出入口盒子：
+ * title/description/order）。**有什么就放什么**，不做任何推断式增补。
  *
- * 官方判定：定义实现 id 以 `@deepseek-ai/` 开头（官方内置包的前缀约定）；
- * 只有 guide 条目、拿不到定义 id 时，按 guide 的 providerId 兜底。
- * @param registry - `ctx.sidebarRightTabs`（entries 为可选面）。
- * @returns 去重后的入口列表（引导条目的标题/描述优先，其余取定义 title）。
+ * 为什么不读 `entries()`（v0.1.4 的错误做法，v0.1.5 修正）：`entries()` 是
+ * **标签类型注册表**（VS Code editor-resolver 语义：谁认识哪种 address、谁渲染），
+ * 里面既有用户可见入口，也有纯资源查看器/内部类型（plan、changes-review、
+ * subagentchat、text…）。把它们当入口灌进分类页 = 凭空多出官方起始页根本没有的
+ * 条目（用户 2026-09-30 纠正）。能力是否出现在侧栏，由官方是否启用该插件决定
+ * （例如浏览器：上游 web profile 默认禁用 `ui-sidebar-browser` → 没有 guide 盒子
+ * → 分类页就不该有它；重新启用走 profile 补丁，而不是靠插件自己找出来）。
+ * @param registry - `ctx.sidebarRightTabs`（只用 guide 面）。
+ * @returns 引导条目列表（title/description 原样透传，异常时退回 kind）。
  */
 function readRegistry(registry: {
-  entries?: () => readonly { id: string; kind: string; title: (address: string) => string }[];
-  guide(): readonly { kind: string; title: () => string; description?: () => string; providerId?: string }[];
+  guide(): readonly { kind: string; title: () => string; description?: () => string }[];
 }): readonly DiscoveredEntry[] {
-  let definitions: readonly { id: string; kind: string; title: (address: string) => string }[] = [];
-  let boxes: readonly { kind: string; title: () => string; description?: () => string; providerId?: string }[] = [];
+  let boxes: readonly { kind: string; title: () => string; description?: () => string }[] = [];
   try {
-    definitions = typeof registry.entries === 'function' ? registry.entries() : [];
     boxes = registry.guide();
   } catch (error) {
-    console.warn('[sidebar-hub] 读取 tab 注册表失败：', error);
+    console.warn('[sidebar-hub] 读取引导条目失败：', error);
     return [];
   }
 
-  /** kind → 引导条目（取首个），供展示标题/描述。 */
-  const boxByKind = new Map<string, { kind: string; title: () => string; description?: () => string; providerId?: string }>();
-  for (const box of boxes) if (!boxByKind.has(box.kind)) boxByKind.set(box.kind, box);
-
   const byKind = new Map<string, DiscoveredEntry>();
-  const fromDefinition = (def: { id: string; kind: string; title: (address: string) => string }): void => {
-    if (byKind.has(def.kind)) return;
-    const box = boxByKind.get(def.kind);
-    let title = '';
-    try {
-      title = box !== undefined ? box.title() : def.title('');
-    } catch {
-      title = def.kind;
-    }
-    let description: string | undefined;
-    try {
-      description = box?.description?.();
-    } catch {
-      description = undefined;
-    }
-    const official = def.id.startsWith(OFFICIAL_ID_PREFIX)
-      || (box?.providerId !== undefined && box.providerId.startsWith(OFFICIAL_ID_PREFIX));
-    byKind.set(def.kind, { kind: def.kind, title, ...(description === undefined ? {} : { description }), ...(official ? { official: true } : {}) });
-  };
-  for (const def of definitions) fromDefinition(def);
-  // guide 里出现、entries 里没有的 kind（旧宿主 / 未进 entries 的引导条目）：
-  // 拿不到定义 id，官方性只能看 guide 的 providerId。
   for (const box of boxes) {
     if (byKind.has(box.kind)) continue;
     let title = '';
@@ -157,8 +130,7 @@ function readRegistry(registry: {
     } catch {
       description = undefined;
     }
-    const official = box.providerId !== undefined && box.providerId.startsWith(OFFICIAL_ID_PREFIX);
-    byKind.set(box.kind, { kind: box.kind, title, ...(description === undefined ? {} : { description }), ...(official ? { official: true } : {}) });
+    byKind.set(box.kind, { kind: box.kind, title, ...(description === undefined ? {} : { description }) });
   }
   return [...byKind.values()];
 }
@@ -217,7 +189,7 @@ export function apply(ctx: ClientCtx): void {
   /** 注册表发现到的入口（apply 后由 refreshCatalog 填充）。 */
   let discovered: readonly DiscoveredEntry[] = [];
 
-  /** 读一次注册表（v0.1.4 R1：entries() ∪ guide()，见 readRegistry）。 */
+  /** 读一次注册表（v0.1.5：只读 guide()，见 readRegistry）。 */
   const discover = (): readonly DiscoveredEntry[] => readRegistry(registry);
 
   // 三个 UI 数据源：分类页分组、设置卡片行、设置卡片分组选项。
@@ -260,8 +232,8 @@ export function apply(ctx: ClientCtx): void {
       renameLocked: RENAME_LOCKED_GROUP_IDS.has(group.id),
     })));
 
-  // ── 漂移检测（v0.1.4 R2）：能力快照 vs 已确认基线 ─────────────────────
-  /** 快照签名：只取 kind 集合（标题/官方标记变化不重复提醒）。 */
+  // ── 漂移检测（v0.1.4 R2，v0.1.5 改为基于 guide 入口集）：能力快照 vs 已确认基线 ──
+  /** 快照签名：只取 kind 集合（标题变化不重复提醒）。 */
   const driftSignature = (kinds: Record<string, unknown>): string => Object.keys(kinds).sort().join('\u0000');
 
   /** 当前提醒视图（引用稳定；变化才换引用并通知 hooks 订阅者）。 */
@@ -289,8 +261,8 @@ export function apply(ctx: ClientCtx): void {
    * 与「未持久化」降级语义一致。
    */
   const syncDrift = (): void => {
-    const snapshot: Record<string, { title: string; official: boolean }> = {};
-    for (const entry of discovered) snapshot[entry.kind] = { title: entry.title, official: entry.official === true };
+    const snapshot: Record<string, { title: string }> = {};
+    for (const entry of discovered) snapshot[entry.kind] = { title: entry.title };
     const stored = configStore.getConfig().drift;
     const baseline = stored !== undefined && hasDriftBaseline(stored) ? stored : null;
     if (baseline === null) {
@@ -310,15 +282,15 @@ export function apply(ctx: ClientCtx): void {
       return OTHER_GROUP_TITLE;
     };
     publishDrift({
-      added: added.map(entry => ({ kind: entry.kind, title: entry.title, official: entry.official === true, groupTitle: groupTitleOf(entry.kind) })),
+      added: added.map(entry => ({ kind: entry.kind, title: entry.title, groupTitle: groupTitleOf(entry.kind) })),
       removed: removed.map(kind => ({ kind, title: baseline.kinds[kind].title })),
     });
   };
 
   /** 用户「知道了」：以当前能力快照为新基线（noteDrift → onChange → 提醒清空）。 */
   const ackDrift = (): void => {
-    const snapshot: Record<string, { title: string; official: boolean }> = {};
-    for (const entry of discovered) snapshot[entry.kind] = { title: entry.title, official: entry.official === true };
+    const snapshot: Record<string, { title: string }> = {};
+    for (const entry of discovered) snapshot[entry.kind] = { title: entry.title };
     configStore.noteDrift(snapshot, driftSignature(snapshot));
   };
 
