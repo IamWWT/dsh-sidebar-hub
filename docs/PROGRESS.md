@@ -19,18 +19,27 @@
   `docs/specs/003-upgrade-drift-sync/spec.md` §0 与管理根 `ops/validation/dsh-test-boot-rc2.html`
   （上游 web profile 默认禁用 `ui-sidebar-browser`，非本插件 bug）。
 - 中断点（接手先读）：
-  - tgz 已产出（`dsh-sidebar-hub-0.1.4.tgz`）；**3084 测试实例端到端复验未做**（重启 3084 →
-    `pnpm dsh plugin --profile web add <tgz>` → `test/ui-acceptance.mjs` 走 token 链接）。
-  - 3082（用户日常实例）装 0.1.4 + 重启 = **用户批准事项**，未批准前不动。
+  - 3084 测试实例端到端复验**已完成**（2026-09-30）：装 0.1.4 tgz + 重启 3084 + `ui-acceptance.mjs`
+    **23/35**（12 项 FAIL 全部归因最小 profile 缺插件/上游禁用浏览器，0.1.4 新能力项全 PASS；
+    截图 `docs/verify-v014/`，复盘见 TROUBLESHOOTING 2026-09-30 条目）。
+  - 3082（用户日常实例）：0.1.4 tgz **已装入 profile**（2026-09-30 用户执行安装命令，安装期因
+    故障工作台悬空 0.9.4 tgz 引用失败 → 应用户指示把 `dsh-troubleshoot-workbench` 从 3082 profile
+    彻底移除：deps/bundles + `cordis.patch.yml` 托管条目，备份 `*.bak-workbenchrm-20260930*`；
+    代码保留在 `dsh-plugins/dsh-troubleshoot-workbench/`，用户将重新设计）。
+    **仅剩重启**：`systemctl --user restart dsh-dev-web`（用户操作/同意）。
   - 浏览器能力重启用（R4）= 用户批准事项：管理根 `ops/browser-web-enable-patch-20260930.md`
     补丁（3082 profile `cordis.patch.yml` 加 `ui-sidebar-browser: disabled: false`），未批准不应用。
 
 ## ⏭ 下一步 + 待确认
 
-- 用户批准 3082 升级后：装 0.1.4 tgz → 重启（`systemctl --user restart dsh-dev-web`）→ 首次进入
-  分类页应见漂移提醒（0.2.0 能力面 vs 0.1.x 基线的新增/移除）→「知道了」后安静。
-- 若用户要浏览器入口回到 3082 侧栏：先应用上述补丁再重启（web profile 为 iframe 形态浏览器）。
-- 3084 验收到 3082 后，旧版 tgz（0.1.3）删除，只留 profile 引用的 0.1.4（AGENTS 铁律：每插件一份 tgz）。
+- 重启 3082（用户操作/同意）：`systemctl --user restart dsh-dev-web` → 0.1.4 首跑静默初始化
+  漂移基线（无横幅）；此后 DSH 升级/插件增删导致入口变化时，分类页自动提醒（新增/移除 + 落点分组）。
+- 若用户要浏览器入口回到 3082 侧栏：先应用 R4 补丁（`ops/browser-web-enable-patch-20260930.md`）
+  再重启（web profile 为 iframe 形态浏览器）。
+- 用户确认 3082 在 0.1.4 下正常后：删旧版 tgz（0.1.3），只留 profile 引用的 0.1.4
+  （AGENTS 铁律：每插件一份 tgz）。
+- `dsh-troubleshoot-workbench` 已按用户指示从 3082 profile 移除（2026-09-30；代码保留在本仓待重新设计，
+  见根 `progress.md` 索引）。
 
 ## 历史沿革（v0.2–v0.9，压成 5 条；逐条过程见 TROUBLESHOOTING.md 与 `specs/002-*/`）
 
