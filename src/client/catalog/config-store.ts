@@ -15,7 +15,7 @@
  */
 import {
   OTHER_GROUP_ID, PROTECTED_GROUP_IDS, RENAME_LOCKED_GROUP_IDS, defaultConfig,
-  type CategoryConfig, type CategoryEntryRule, type CategoryGroup,
+  type CategoryConfig, type CategoryDrift, type CategoryEntryRule, type CategoryGroup,
 } from '../../shared/catalog-config.ts';
 
 /** settings 写操作（与 `SettingsPathOpView` 同形）。 */
@@ -75,6 +75,15 @@ export interface CatalogConfigStore {
   setEntryLabel(kind: string, label: string): void;
   /** 从配置里移除一个 kind 的规则（回到「未登记」状态，落「其他」组）。 */
   forgetEntry(kind: string): void;
+  /** 恢复出厂分类。 */
+  reset(): void;
+  /**
+   * 写入漂移基线（v0.1.4 R2）：更新 settings 的 `drift` 桶
+   * （首跑静默初始化 / 用户「知道了」确认）。
+   * @param kinds - 当前注册表能力快照（kind → 标题/官方标记）。
+   * @param ack - 快照签名（仅比对用）。
+   */
+  noteDrift(kinds: Record<string, { title: string; official: boolean }>, ack: string): void;
   /** 恢复出厂分类（清空 settings 的 user 层，回落到组合 base）。 */
   reset(): void;
 }
@@ -92,7 +101,16 @@ function cloneConfig(source: CategoryConfig): CategoryConfig {
     ...(source.order === undefined
       ? {}
       : { order: Object.fromEntries(Object.entries(source.order).map(([id, kinds]) => [id, [...kinds]])) }),
+    ...(source.drift === undefined
+      ? {}
+      : { drift: { kinds: { ...source.drift.kinds }, ack: source.drift.ack } }),
   };
+}
+
+/** 漂移基线空表 = 「从未初始化」（首跑静默初始化的判定条件之一）。 */
+export function hasDriftBaseline(drift: CategoryDrift | undefined): boolean {
+  if (drift === undefined) return false;
+  return Object.keys(drift.kinds).length > 0 || drift.ack !== '';
 }
 
 /** 归一化 settings 快照值（容忍缺字段/坏形状，绝不把 undefined 传下去）。 */
@@ -118,6 +136,24 @@ function normalizeConfig(value: CategoryConfig | undefined): CategoryConfig | un
       if (Array.isArray(kinds)) order[groupId] = kinds.filter((kind): kind is string => typeof kind === 'string');
     }
   }
+  // 漂移基线（v0.1.4）：缺字段/坏形状一律归位为空基线，绝不把脏数据传下去。
+  let drift: CategoryConfig['drift'];
+  if (typeof value.drift === 'object' && value.drift !== null) {
+    const kinds: Record<string, { title: string; official: boolean }> = {};
+    if (typeof value.drift.kinds === 'object' && value.drift.kinds !== null) {
+      for (const [kind, record] of Object.entries(value.drift.kinds)) {
+        if (typeof record !== 'object' || record === null) continue;
+        kinds[kind] = {
+          title: typeof record.title === 'string' ? record.title : kind,
+          official: record.official === true,
+        };
+      }
+    }
+    drift = {
+      kinds,
+      ack: typeof value.drift.ack === 'string' ? value.drift.ack : '',
+    };
+  }
   return {
     groups: groups.map(group => ({
       id: group.id,
@@ -126,6 +162,7 @@ function normalizeConfig(value: CategoryConfig | undefined): CategoryConfig | un
     })),
     entries,
     order,
+    ...(drift === undefined ? {} : { drift }),
   };
 }
 
@@ -169,7 +206,7 @@ export function createCatalogConfigStore(onChange: () => void): CatalogConfigSto
   /**
    * 提交一份新配置：就地生效 + 尽力持久化。
    * @param next - 新配置（已与当前配置脱钩）。
-   * @param fields - 需要写回的桶名（`groups` / `entries` / `order`）。
+   * @param fields - 需要写回的桶名（`groups` / `entries` / `order` / `drift`）。
    */
   const commit = (next: CategoryConfig, fields: readonly string[]): void => {
     config = next;
@@ -181,7 +218,9 @@ export function createCatalogConfigStore(onChange: () => void): CatalogConfigSto
       path: [field],
       value: field === 'groups'
         ? next.groups
-        : field === 'entries' ? toStoredEntries(next.entries) : (next.order ?? {}),
+        : field === 'entries' ? toStoredEntries(next.entries)
+        : field === 'drift' ? (next.drift ?? { kinds: {}, ack: '' })
+        : (next.order ?? {}),
     }));
     void target.mutate(ops).catch((error: unknown) => {
       console.warn('[sidebar-hub] 保存分类配置失败（改动已在本次会话生效）：', error);
@@ -308,9 +347,16 @@ export function createCatalogConfigStore(onChange: () => void): CatalogConfigSto
       commit(next, ['entries', 'order']);
     },
 
+    noteDrift: (kinds, ack) => {
+      const next = cloneConfig(config);
+      next.drift = { kinds: { ...kinds }, ack };
+      commit(next, ['drift']);
+    },
+
     reset: () => {
       const target = scope;
       // 出厂分类就是 settings 的组合 base：清掉 user 层字段即回落（不需要写一份拷贝）。
+      // 漂移基线（drift）描述的是 DSH 能力而非用户分类，不参与「恢复默认」。
       if (target !== null && target.getSnapshot().writable) {
         void Promise.all(['groups', 'entries', 'order'].map(field => target.unset(field)))
           .then(() => { adopt(); })

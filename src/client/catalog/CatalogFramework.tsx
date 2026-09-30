@@ -15,6 +15,7 @@
  */
 import './catalog.css';
 import { useEffect, useRef, useState } from 'react';
+import type { DriftView } from './mapping.ts';
 import type { CatalogGroup } from './mapping.ts';
 import { OTHER_GROUP_ID } from '../catalog/mapping.ts';
 import { t } from '../locales.ts';
@@ -40,6 +41,8 @@ export interface CatalogInjected {
   resetCatalog: () => void;
   /** 重新读注册表并解析分类（低频兜底；结果未变则空转）。 */
   refreshCatalog: () => void;
+  /** 确认漂移提醒（v0.1.4 R2）：把当前能力快照写为新的基线，提醒消失。 */
+  ackDrift: () => void;
   /** 分类配置的持久化状态（'memory' = settings 不可用，改动只在本次会话）。 */
   persistence: () => 'pending' | 'host' | 'memory';
 }
@@ -52,10 +55,12 @@ export interface CatalogInjected {
  */
 export type SelectorHook<T> = <S>(select: (value: T) => S, isEqual?: (left: S, right: S) => boolean) => S;
 
-/** 组件 props：inject 面 + hooks 格绑出的 useCatalog。 */
+/** 组件 props：inject 面 + hooks 格绑出的 useCatalog / useDrift。 */
 export type CatalogProps = CatalogInjected & {
   /** 分类数据读取（选择器钩子；本组件取全量，故用恒等选择器）。 */
   useCatalog: SelectorHook<readonly CatalogGroup[]>;
+  /** 漂移提醒数据（v0.1.4 R2；选择器钩子，本组件取全量）。 */
+  useDrift: SelectorHook<DriftView>;
 };
 
 /** 兜底轮询间隔（毫秒）：注册表变更订阅缺失时的保险，改动才触发重渲染。 */
@@ -85,9 +90,13 @@ function tileGlyph(title: string): string {
 export function CatalogFramework(props: CatalogProps): ReactNS.ReactElement {
   const {
     openTab, toggleGroup, addGroup, renameGroup, deleteGroup, moveEntry, resetCatalog,
-    refreshCatalog, persistence, useCatalog,
+    refreshCatalog, ackDrift, persistence, useCatalog, useDrift,
   } = props;
   const groups = useCatalog(value => value);
+  /** 漂移提醒视图（v0.1.4 R2；空 = 无提醒）。 */
+  const drift = useDrift(value => value);
+  /** 能力新增且未确认的 kind 集合（条目上打「新」标记）。 */
+  const newKinds = new Set(drift.added.map(entry => entry.kind));
 
   /** 重命名中的分组 id（null = 无）。 */
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
@@ -146,6 +155,33 @@ export function CatalogFramework(props: CatalogProps): ReactNS.ReactElement {
           </button>
         </div>
       </div>
+
+      {(drift.added.length > 0 || drift.removed.length > 0) && (
+        <section className="catalogDrift" role="status">
+          <div className="catalogDriftHead">
+            <span className="catalogDriftTitle">{t('catalog.driftNote', { n: drift.added.length + drift.removed.length })}</span>
+            <button type="button" className="catalogBtn" title={t('catalog.driftAckHint')} onClick={ackDrift}>
+              {t('catalog.driftAck')}
+            </button>
+          </div>
+          {drift.added.map(entry => (
+            <div key={entry.kind} className="catalogDriftRow">
+              <span className="catalogDriftTag catalogDriftTagAdd">{t('catalog.driftAdded')}</span>
+              <span className="catalogDriftName">{entry.title}</span>
+              <code className="catalogDriftKind">{entry.kind}</code>
+              <span className="catalogDriftTarget">→ {entry.groupTitle}</span>
+              {entry.official && <span className="catalogItemOfficial">{t('catalog.official')}</span>}
+            </div>
+          ))}
+          {drift.removed.map(entry => (
+            <div key={entry.kind} className="catalogDriftRow">
+              <span className="catalogDriftTag catalogDriftTagRemove">{t('catalog.driftRemoved')}</span>
+              <span className="catalogDriftName">{entry.title}</span>
+              <code className="catalogDriftKind">{entry.kind}</code>
+            </div>
+          ))}
+        </section>
+      )}
 
       {groups.map(group => (
         <section
@@ -258,6 +294,7 @@ export function CatalogFramework(props: CatalogProps): ReactNS.ReactElement {
                 >
                   <span className="catalogItemTile" aria-hidden="true">{tileGlyph(item.title)}</span>
                   <span className="catalogItemLabel">{item.title}</span>
+                  {newKinds.has(item.kind) && <span className="catalogItemNew" title={t('catalog.driftNewHint')}>{t('catalog.driftNew')}</span>}
                   {item.official && <span className="catalogItemOfficial">{t('catalog.official')}</span>}
                 </button>
               ))}

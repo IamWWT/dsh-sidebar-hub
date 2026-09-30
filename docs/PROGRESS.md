@@ -3,7 +3,7 @@
 ## 当前状态
 
 - 文档性质：历史记录（本插件进度真源；已完成部分已压成历史沿革，待办见「进行中 / 下一步」）
-- 对应版本：v0.1.3
+- 对应版本：v0.1.4
 - 状态：历史记录，结论按当时口径（当前有效能力见 index.md 与 REQUIREMENTS.md）
 - 维护者：AI + 用户
 
@@ -12,12 +12,25 @@
 
 ## 🔄 进行中（中断点）
 
-- **v0.5–v0.8 全部完成并验收**：`pnpm check` 全绿（0 hub-* 类型 / 0 正文 / 默认四组）；测试实例 3085 UI 验收 **35/35**（v0.8：删「工程与任务」空组、「浏览与工具」改名「工具」）+ 文档验收 **11/11**。
-- 待办：3082 侧 v0.3–v0.8 均待重启生效（须用户同意）。
+- **v0.1.4（spec 003，DSH 升级漂移同步）已实现并 `pnpm check` 全绿**（2026-09-30）：
+  R1 发现源升级（`entries()` ∪ `guide()`，官方性按 `@deepseek-ai/` 前缀）；R2 漂移检测
+  （settings `drift` 桶首跑静默初始化、新增/移除提醒、「知道了」滚动基线）；R3 官方能力
+  未登记归属时自动落「官方」组。0.1.x→0.2.0 升级后浏览器等原生能力从分类页消失的根因诊断见
+  `docs/specs/003-upgrade-drift-sync/spec.md` §0 与管理根 `ops/validation/dsh-test-boot-rc2.html`
+  （上游 web profile 默认禁用 `ui-sidebar-browser`，非本插件 bug）。
+- 中断点（接手先读）：
+  - tgz 已产出（`dsh-sidebar-hub-0.1.4.tgz`）；**3084 测试实例端到端复验未做**（重启 3084 →
+    `pnpm dsh plugin --profile web add <tgz>` → `test/ui-acceptance.mjs` 走 token 链接）。
+  - 3082（用户日常实例）装 0.1.4 + 重启 = **用户批准事项**，未批准前不动。
+  - 浏览器能力重启用（R4）= 用户批准事项：管理根 `ops/browser-web-enable-patch-20260930.md`
+    补丁（3082 profile `cordis.patch.yml` 加 `ui-sidebar-browser: disabled: false`），未批准不应用。
 
 ## ⏭ 下一步 + 待确认
 
-- 3082 侧：v0.3–v0.8 尚未在 3082 重启生效（须用户同意后 `systemctl --user restart dsh-dev-web`）。重启后 hub 只剩「分类框架 + 设置卡片 + md(mermaid) 渲染」三件事；官方接管终端/浏览器/Office 预览。
+- 用户批准 3082 升级后：装 0.1.4 tgz → 重启（`systemctl --user restart dsh-dev-web`）→ 首次进入
+  分类页应见漂移提醒（0.2.0 能力面 vs 0.1.x 基线的新增/移除）→「知道了」后安静。
+- 若用户要浏览器入口回到 3082 侧栏：先应用上述补丁再重启（web profile 为 iframe 形态浏览器）。
+- 3084 验收到 3082 后，旧版 tgz（0.1.3）删除，只留 profile 引用的 0.1.4（AGENTS 铁律：每插件一份 tgz）。
 
 ## 历史沿革（v0.2–v0.9，压成 5 条；逐条过程见 TROUBLESHOOTING.md 与 `specs/002-*/`）
 

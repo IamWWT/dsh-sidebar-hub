@@ -197,12 +197,21 @@ const registry = {
   register: (definition) => {
     definitions.push(definition);
     for (const entry of definition.guide ?? []) {
-      guideEntries.push({ ...entry, kind: definition.kind });
+      guideEntries.push({ ...entry, kind: definition.kind, _def: definition });
     }
     guideEntries.sort((left, right) => left.order - right.order);
     for (const listener of subscribers) listener();
-    return () => {};
+    // 可注销：模拟 DSH 升级/插件卸载移除一个能力（漂移「移除」场景）。
+    return () => {
+      const at = definitions.indexOf(definition);
+      if (at >= 0) definitions.splice(at, 1);
+      guideEntries = guideEntries.filter(entry => entry._def !== definition);
+      guideEntries.sort((left, right) => left.order - right.order);
+      for (const listener of subscribers) listener();
+    };
   },
+  /** v0.1.4 R1：全量在效 tab 定义（旧宿主没有此方法，discover 退回 guide-only）。 */
+  entries: () => definitions,
   guide: () => guideEntries,
   subscribe: (listener) => { subscribers.add(listener); return () => { subscribers.delete(listener); }; },
 };
@@ -221,22 +230,28 @@ const ctx = {
 };
 
 // 预置：三个自研工作台 + 语音工具 + 官方 files/terminal/browser + 小游戏（模拟其它插件先注册）
-for (const [kind, title, order] of [
+// v0.1.4 R1：官方 kind 用 @deepseek-ai/ 前缀 id（真实 DSH 的官方包命名），
+// 自研插件用 seed/ 前缀（第三方 → 非官方）。
+for (const [kind, title, order, official = false] of [
   ['daily-workbench', '个人工作台', 10],
   ['troubleshoot-workbench', '故障排查工作台', 11],
   ['trading-workbench', '交易工作台', 12],
   ['audio-transcriber', '语音转文字', 40],
-  ['files', '文件', 5],
-  ['terminal', '终端', 6],                     // 官方内置终端（v0.2 起转发）
-  ['browser', '浏览器', 7],                    // 官方内置浏览器（v0.5 起转发）
-  ['guide', '开始', 3],                        // 框架内部 kind → 映射表 hidden
-  ['text', '文本查看器', 4],                    // 框架内部 kind → 映射表 hidden
-  ['minesweeper', '🎮 扫雷', 80],              // 小游戏 → 默认「游戏」组
-  ['sudoku', '🧩 数独', 81],                   // 小游戏 → 默认「游戏」组（v0.2）
-  ['mystery-plugin', '未知插件', 90],          // 未登记 → 「其他」
+  ['files', '文件', 5, true],
+  ['terminal', '终端', 6, true],                     // 官方内置终端（v0.2 起转发）
+  ['browser', '浏览器', 7, true],                    // 官方内置浏览器（v0.5 起转发）
+  ['guide', '开始', 3, true],                        // 框架内部 kind → 映射表 hidden
+  ['text', '文本查看器', 4, true],                    // 框架内部 kind → 映射表 hidden
+  ['minesweeper', '🎮 扫雷', 80],
+  ['sudoku', '🧩 数独', 81],
+  ['mystery-plugin', '未知插件', 90],
 ]) {
-  registry.register({ id: `seed/${kind}`, kind, title: () => title, guide: [{ order, title: () => title }] });
+  registry.register({ id: official ? `@deepseek-ai/${kind}` : `seed/${kind}`, kind, title: () => title, guide: [{ order, title: () => title }] });
 }
+// v0.1.4 R1/R3 关键形态：DSH 升级后新出现的 kind **只有 tab 定义、没有 guide 入口**
+// （0.2.x 里浏览器能力正是这样消失的）——只能靠 entries() 发现。
+registry.register({ id: '@deepseek-ai/fresh-official', kind: 'fresh-official', title: () => '新官方能力' });
+registry.register({ id: 'fresh-plugin', kind: 'fresh-plugin', title: () => '新插件入口' });
 
 plugin.apply(ctx);
 
@@ -278,8 +293,8 @@ const bindSelectorHook = (source) => (select, isEqual) => {
   const picked = select(value);
   return typeof isEqual === 'function' ? picked : picked;
 };
-assert.deepEqual(Object.keys(guideFace.hooks), ['catalog'], 'guide 的 hooks 格只含 catalog');
-const props = { ...guideFace, useCatalog: bindSelectorHook(guideFace.hooks.catalog) };
+assert.deepEqual(Object.keys(guideFace.hooks), ['catalog', 'drift'], 'v0.1.4 起 hooks 格含 catalog + drift');
+const props = { ...guideFace, useCatalog: bindSelectorHook(guideFace.hooks.catalog), useDrift: bindSelectorHook(guideFace.hooks.drift) };
 
 /** 渲染起始页（每次重渲染都新调用一次组件体，等价于 React 重渲染）。 */
 const render = () => renderRegistered(guideReg, props);
@@ -321,8 +336,8 @@ assert.ok(byTitle('工程与任务') === undefined, 'v0.8 起默认无「工程�
 assert.deepEqual(labelsIn('工作台').sort(), ['个人工作台', '交易工作台', '故障排查工作台'].sort());
 assert.deepEqual(labelsIn('工具').sort(), ['语音转文字'].sort(), '「浏览与工具」v0.8 改名「工具」');
 assert.deepEqual(labelsIn('游戏').sort(), ['🧩 数独', '🎮 扫雷'].sort(), '扫雷与数独应落在默认「游戏」组');
-assert.deepEqual(labelsIn('官方').sort(), ['文件', '终端', '浏览器'].sort(), '官方内置终端/浏览器应与 Files 同处「官方」组（恢复默认后保持一致）');
-assert.deepEqual(labelsIn('其他'), ['未知插件']);
+assert.deepEqual(labelsIn('官方').sort(), ['文件', '终端', '浏览器', '新官方能力'].sort(), '官方内置终端/浏览器/文件与「无 guide 的官方新 kind」同处「官方」组（R1 发现 + R3 自动归组）');
+assert.deepEqual(labelsIn('其他').sort(), ['新插件入口', '未知插件'].sort(), '未登记第三方 kind 自动落「其他」（R3）');
 // 「游戏」组现在有默认成员（扫雷、数独），不再是空分组。
 assert.ok(!groups.map(titleOf).some(title =>
   labelsIn(title).includes('开始') || labelsIn(title).includes('文本查看器')), 'hidden 条目不应出现');
@@ -380,12 +395,25 @@ let scopeValue = {
     'ghost-plugin': { groupId: 'games' },
   },
   order: {},
+  // v0.1.4 R2：首跑时尚无漂移基线（base 的出厂形态）
+  drift: { kinds: {}, ack: '' },
 };
 const fakeScope = {
   getSnapshot: () => ({ status: 'ready', value: scopeValue, writable: true, mode: 'host' }),
   subscribe: (listener) => { settingsListeners.add(listener); return () => { settingsListeners.delete(listener); }; },
-  mutate: (ops) => { writes.push(ops); return Promise.resolve(); },
-  unset: (field) => { unsetFields.push(field); return Promise.resolve(); },
+  // 模拟真实 settings：写回立即落到用户层并通知快照订阅者（adopt 重算）
+  mutate: (ops) => {
+    writes.push(ops);
+    for (const op of ops) { if (op.op === 'set') scopeValue[op.path[0]] = op.value; }
+    for (const listener of settingsListeners) listener();
+    return Promise.resolve();
+  },
+  unset: (field) => {
+    unsetFields.push(field);
+    delete scopeValue[field];
+    for (const listener of settingsListeners) listener();
+    return Promise.resolve();
+  },
 };
 const settingsCb = injectedCallbacks.get('settingsScope');
 assert.equal(typeof settingsCb, 'function', '应通过 ctx.inject 等待 settingsScope');
@@ -394,6 +422,15 @@ settingsCb({ settingsScope: { bind: (spec) => { assert.equal(spec.namespace, 'ds
 // 绑定后：以 settings 值为准（mystery 被分到「游戏」组）
 assert.deepEqual(labelsIn('游戏'), ['未知插件'], '绑定 settings 后应采用其 entries');
 assert.ok(guideFace.persistence() === 'host', '可写时持久化状态为 host');
+
+// v0.1.4 R2：首跑（无基线）静默初始化漂移基线——恰好一次 drift 写，之后清掉，
+// 让后续按序号断言的写序列保持原索引。
+assert.equal(writes.length, 1, '首跑应静默初始化漂移基线（恰好一次写）');
+assert.equal(writes[0][0].path[0], 'drift', '首跑基线应写 drift 桶');
+assert.ok(Object.keys(writes[0][0].value.kinds).includes('fresh-official'), '基线应覆盖「只有 tab 定义、没有 guide 入口」的新 kind（R1 发现路径）');
+assert.ok(Object.keys(writes[0][0].value.kinds).includes('terminal'), '基线应含常规 kind');
+assert.equal(guideFace.hooks.drift.getSnapshot().added.length, 0, '首跑初始化不产生提醒');
+writes.length = 0;
 
 // 拖拽：把「语音转文字」从「工具」拖到「游戏」组末尾
 // 注意：假 react 的 useRef 每次渲染都新建，所以一次交互内的节点必须取自**同一次渲染**。
@@ -529,4 +566,42 @@ const cardGroupsBefore = cardFace.hooks.groups.getSnapshot().length;
 cardFace.addGroup('卡片新建');
 assert.equal(cardFace.hooks.groups.getSnapshot().length, cardGroupsBefore + 1, '卡片新建分组应进分组源');
 
-console.log('smoke: client wiring OK（1 工厂 / 0 hub-* 类型 / 0 正文 / 1 guide chain / 分组顺序与点击 / 官方终端·浏览器转发 / 拖拽与排序 / settings 写回与恢复默认 / 设置卡片折叠与表单）');
+// ── 9) v0.1.4 R1/R2/R3：升级漂移（新发现自动归组 + 提醒 + ack 基线滚动）──
+const driftView = () => guideFace.hooks.drift.getSnapshot();
+assert.deepEqual(driftView(), { added: [], removed: [] }, '基线 = 当前快照时无提醒');
+
+// 模拟 DSH 升级：新能力被注册（有 tab 定义、无 guide 入口 —— 正是 0.2.x 的形态）
+registry.register({ id: '@deepseek-ai/upgraded-cap', kind: 'upgraded-cap', title: () => '升级新增能力' });
+registry.register({ id: 'vendor-cap', kind: 'vendor-cap', title: () => '第三方新入口' });
+assert.deepEqual(driftView().added.map(a => a.kind).sort(), ['upgraded-cap', 'vendor-cap'], '新发现能力应进入提醒');
+assert.equal(driftView().added.find(a => a.kind === 'upgraded-cap').groupTitle, '官方', '官方新能力应自动归入「官方」组（R3）');
+assert.equal(driftView().added.find(a => a.kind === 'upgraded-cap').official, true, '官方包能力应标记官方');
+assert.equal(driftView().added.find(a => a.kind === 'vendor-cap').groupTitle, '其他', '未登记第三方新入口自动落「其他」（R3）');
+assert.ok(labelsIn('官方').includes('升级新增能力'), '新官方能力应出现在「官方」组');
+assert.ok(labelsIn('其他').includes('第三方新入口'), '第三方新入口应出现在「其他」组');
+
+// 提醒横幅出现在分类页；点「知道了」→ 基线滚动、提醒消失
+let driftTree = render();
+const driftHead = findIn(driftTree, node => node.props?.className === 'catalogDriftHead')[0];
+assert.ok(driftHead !== undefined, '漂移提醒横幅应出现在分类页');
+const ackBtn = driftHead.children.find(c => typeof c === 'object' && c.props?.className === 'catalogBtn');
+assert.ok(ackBtn !== undefined, '横幅应含确认按钮');
+ackBtn.props.onClick();
+assert.deepEqual(driftView(), { added: [], removed: [] }, '「知道了」后提醒应消失');
+const ackWrite = writes[writes.length - 1];
+assert.equal(ackWrite[0].path[0], 'drift', 'ack 应写 drift 桶');
+assert.ok(ackWrite[0].value.kinds['upgraded-cap'] !== undefined, 'ack 后的新基线应包含新能力（升级后不再反复提醒）');
+assert.ok(findIn(render(), node => node.props?.className === 'catalogDriftHead')[0] === undefined, 'ack 后横幅应从页面消失');
+
+// 能力移除（DSH 升级移除/插件卸载）也要提醒；再次 ack 后才安静
+const disposeTemp = registry.register({ id: 'temp-cap', kind: 'temp-cap', title: () => '临时能力' });
+assert.deepEqual(driftView().added.map(a => a.kind), ['temp-cap'], '此前未见过的新能力再次进入提醒');
+guideFace.ackDrift();
+assert.deepEqual(driftView(), { added: [], removed: [] }, 'ack 后回到安静态');
+disposeTemp();
+assert.deepEqual(driftView().removed.map(r => r.kind), ['temp-cap'], '被移除的能力应出现在提醒');
+assert.equal(driftView().removed[0].title, '临时能力');
+guideFace.ackDrift();
+assert.deepEqual(driftView(), { added: [], removed: [] }, '用户确认移除提醒后保持安静');
+
+console.log('smoke: client wiring OK（1 工厂 / 0 hub-* 类型 / 0 正文 / 1 guide chain / 分组顺序与点击 / 官方终端·浏览器转发 / 拖拽与排序 / settings 写回与恢复默认 / 设置卡片折叠与表单 / v0.1.4 漂移发现·自动归组·提醒与 ack）');

@@ -36,11 +36,18 @@ export interface HubSettingsEntry {
   hidden: boolean;
 }
 
+/** 漂移基线（存储形态；v0.1.4 能力漂移检测，spec 003 R2）。 */
+export interface HubSettingsDrift {
+  kinds: Record<string, { title: string; official: boolean }>;
+  ack: string;
+}
+
 /** settings 文档中的一节。 */
 export interface HubSettings {
   groups: HubSettingsGroup[];
   entries: Record<string, HubSettingsEntry>;
   order: Record<string, string[]>;
+  drift: HubSettingsDrift;
 }
 
 /**
@@ -61,6 +68,8 @@ export const HUB_SETTINGS_BASE: HubSettings = {
   groups: DEFAULT_GROUPS.map(group => ({ id: group.id, title: group.title, collapsed: group.collapsed === true })),
   entries: Object.fromEntries(Object.entries(DEFAULT_ENTRY_RULES).map(([kind, rule]) => [kind, toStoredEntry(rule)])),
   order: {},
+  // 漂移基线空表 = 「从未初始化」；client 首跑时静默写入首份快照（不提醒）。
+  drift: { kinds: {}, ack: '' },
 };
 
 /** wire schema：允许的字段与类型；缺省即出厂分类。 */
@@ -76,4 +85,12 @@ export const HubSettingsSchema = z.object({
     hidden: z.boolean().default(false),
   })).default(HUB_SETTINGS_BASE.entries),
   order: z.dict(z.array(z.string())).default({}),
+  // 漂移基线（v0.1.4）：kinds 为 last-acknowledged 的能力快照，ack 是其签名。
+  drift: z.object({
+    kinds: z.dict(z.object({
+      title: z.string().default(''),
+      official: z.boolean().default(false),
+    })).default({}),
+    ack: z.string().default(''),
+  }).default({ kinds: {}, ack: '' }),
 });

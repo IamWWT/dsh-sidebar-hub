@@ -98,8 +98,14 @@ const envelope = JSON.parse(JSON.stringify(schema.toJSON()));
 assert.equal(typeof envelope, 'object');
 assert.ok(envelope.refs !== undefined, 'envelope 应是 {uid, refs} 引用表形态');
 const revived = new schemastery(envelope);
-assert.deepEqual(Object.keys(revived(mergeLayers(base, {}))).sort(), ['entries', 'groups', 'order']);
+assert.deepEqual(Object.keys(revived(mergeLayers(base, {}))).sort(), ['drift', 'entries', 'groups', 'order']);
 assert.equal(revived(base).entries['audio-transcriber'].groupId, 'browse-tools', '还原后的 schema 仍能解析出厂分类');
+
+// 7) v0.1.4 R2：drift 桶 —— base 是空基线（首跑触发静默初始化），用户层整值写入
+assert.deepEqual(revived(base).drift, { kinds: {}, ack: '' }, 'drift 出厂即空基线');
+const userDrift = { kinds: { terminal: { title: '终端', official: true } }, ack: 'terminal\u0000' };
+assert.deepEqual(revived(mergeLayers(base, { drift: userDrift })).drift, userDrift, '用户层 drift 整值保留');
+assert.deepEqual(revived(mergeLayers(base, { drift: { ack: 'sig' } })).drift, { kinds: {}, ack: 'sig' }, '部分 drift 由 schema 补默认值');
 
 await rm(outFile, { force: true });
 console.log('smoke: host settings OK（命名空间 / 出厂 base / 深合并 / 数组整桶替换 / 默认值补齐）');

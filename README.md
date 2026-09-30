@@ -36,11 +36,11 @@
 
 ```bash
 cd dsh-plugins/dsh-sidebar-hub
-pnpm check && npm pack        # 产出 dsh-sidebar-hub-0.1.3.tgz
+pnpm check && npm pack        # 产出 dsh-sidebar-hub-0.1.4.tgz
 
 cd ../../deepseek-harness
 DSH_HOME=~/.dsh-dev pnpm dsh plugin --profile web add \
-  /home/wwt/Downloads/aigc/proj/deepseek/dsh-plugins/dsh-sidebar-hub/dsh-sidebar-hub-0.1.3.tgz
+  /home/wwt/Downloads/aigc/proj/deepseek/dsh-plugins/dsh-sidebar-hub/dsh-sidebar-hub-0.1.4.tgz
 ```
 
 - 装完核对 `~/.dsh-dev/profiles/web/node_modules/dsh-sidebar-hub/dist` 真实存在。
@@ -102,9 +102,9 @@ node test/probe-tab.mjs --url "http://127.0.0.1:3085/?token=..." --kind troubles
 
 ## 版本号
 
-**0.1.3**（`package.json.version` = tgz 文件名 `dsh-sidebar-hub-0.1.3.tgz`）
+**0.1.4**（`package.json.version` = tgz 文件名 `dsh-sidebar-hub-0.1.4.tgz`）
 
-> 注：[CHANGELOG.md](CHANGELOG.md) 最新条目仍为 **0.1.2**，0.1.3 未记录（待补）。
+> 注：[CHANGELOG.md](CHANGELOG.md) 已补记 0.1.3（native-entry-ui 修复）与 0.1.4（DSH 升级漂移同步，spec 003）。
 
 ## 附：仓库与共用目录
 

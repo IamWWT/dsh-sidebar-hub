@@ -313,4 +313,84 @@
   cursor: help;
 }
 
+/* ── v0.1.4 R2：能力漂移提醒横幅 + 条目「新」标记 ───────────────────────── */
+
+.catalogDrift {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 11px 10px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 55%, var(--dsw-alias-border-l1));
+  border-left: 3px solid var(--dsw-alias-state-warn-primary);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 7%, var(--dsw-alias-bg-layer-1));
+}
+
+.catalogDriftHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.catalogDriftTitle {
+  min-width: 0;
+  font: var(--hub-font-tiny-strong);
+  color: var(--dsw-alias-label-primary);
+}
+
+.catalogDriftRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font: var(--hub-font-tiny);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.catalogDriftTag {
+  flex: none;
+  padding: 0 5px;
+  border-radius: 4px;
+  font: var(--hub-font-tiny-strong);
+}
+
+.catalogDriftTagAdd {
+  color: var(--dsw-alias-state-success-primary);
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 12%, transparent);
+}
+
+.catalogDriftTagRemove {
+  color: var(--dsw-alias-state-error-primary);
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);
+}
+
+.catalogDriftName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalogDriftKind {
+  flex: none;
+  font-size: 10px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.catalogDriftTarget {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* 条目上的「新」徽标：DSH 升级后新发现、尚未确认的能力 */
+.catalogItemNew {
+  flex: none;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--dsw-alias-state-warn-primary);
+  color: var(--dsw-alias-bg-base);
+  font: var(--hub-font-tiny-strong);
+}
+
 .catalogTerminal { display: flex; gap: 3px; align-items: center; }

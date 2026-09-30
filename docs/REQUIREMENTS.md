@@ -3,7 +3,7 @@
 ## 当前状态
 
 - 文档性质：规格（需求 → 决策 → 实现 → 验收追踪表）
-- 对应版本：v0.1.3
+- 对应版本：v0.1.4
 - 状态：有效
 - 维护者：AI + 用户
 
@@ -19,7 +19,10 @@
 | 三大工作台放一起、按功能分区 | 出厂 4 组（v0.8 起），顺序：**官方 → 工作台 → 工具 → 游戏**（「浏览与工具」改名「工具」、删空组「工程与任务」）；未登记 kind 落「其他」；每组有语义色 + 条目首字图标块 | spec §2.3、2026-09-13 用户反馈 / v0.8 |
 | ~~吸收 better-sidebar 的常用功能~~ → **v0.6 起不再吸收**（历史决策，已全线取消） | 初版曾以五个 `hub-*` 类型（任务管理 / Subagent / Git / 文件变动 / 浏览器）自研承接并脱钩 better-sidebar 运行时；**v0.6 起全部移除**，本插件只做入口编排。终端（v0.2）、浏览器（v0.5）、Office 预览（v0.7）均交还官方内置 | spec §2.2 / §0（v0.2、v0.6、v0.7）/ §3 |
 | 官方 files 保持原样 | **不注册** `kind:'files'` extension、**不认领** `dsh-resource://file/**`；只在分类里 `openTab('files')` 转发并标「官方」 | spec §2.4（红线） |
-| 分类可维护、可自定义 | 出厂映射表 + 运行时**自动发现**（读 `sidebarRightTabs.guide()`）；分类页拖拽与设置页表单两处可编辑 | spec §2.5 |
+| 分类可维护、可自定义 | 出厂映射表 + 运行时**自动发现**（v0.1.4 起读 `sidebarRightTabs.entries()` 全量在效定义 ∪ `guide()` 引导条目，按 kind 去重；旧宿主无 `entries()` 退回 guide-only）；分类页拖拽与设置页表单两处可编辑 | spec §2.5 / spec 003 R1 |
+| DSH 升级引入/移除能力时**用户能察觉**（2026-09-30 用户原话「避免我不知道」） | 能力快照存 settings `dsh-sidebar-hub` 的 `drift` 桶：首跑静默初始化基线；此后注册表新增/移除入口 → 分类页顶部提醒（新增/移除分列 + 落点分组），「知道了」写新基线并保持安静（跨重启） | spec 003 R2 |
+| 上游新引入的官方能力不该落进「其他」 | 未登记归属且由 `@deepseek-ai/*` 实现的 kind 自动归「官方」组；第三方落「其他」；用户显式规则始终优先 | spec 003 R3 |
+| 浏览器升级后从侧栏消失，用户无感知（2026-09-29 事故） | 根因在上游 web profile 默认禁用 `ui-sidebar-browser`（非本插件 bug，证据 spec 003 §0）；重启用 = 3082 profile 层 `cordis.patch.yml` 补丁（管理根 `ops/browser-web-enable-patch-20260930.md`，**待用户批准**） | spec 003 R4 |
 | 配置全局一份、可持久化 | DSH settings 命名空间 `dsh-sidebar-hub`；`base` = 出厂分类，「恢复默认」= `unset` 回落 base | spec §2.5 |
 | 全屏展示（覆盖整个浏览器） | **不由本插件实现**：属 DSH WEB 层能力，用户在应用层处理；插件只做侧栏内容 | spec §2.6（非目标） |
 | 独立路由 | `/shub/*`（JSON 网关 + WS + 媒体/HTML/上传 + `/shub/bundle` 惰性 chunk），前置 trust-fence | plan §1 |
@@ -48,6 +51,7 @@
 | T11 | 配置持久化：host settings 命名空间（schema + base）+ client `config-store`（唯一写入口） | ✅ 完成（冒烟段 7） |
 | T12 | 设置页卡片「右侧栏分类」：分组管理 + 每条 kind（分组 / 显示名 / 隐藏 / 移除规则）+ 未登记提示 | ✅ 完成（冒烟段 8） |
 | T13 | 收敛：spec §7 十条验收在测试实例逐条通过（`test/ui-acceptance.mjs` **41/41**，含数据面与语音环境断言）+ 文档同步 + 3082 未被触碰 | ✅ 完成（测试实例 3085，better-sidebar 已卸载，截图在 `docs/verify/`） |
+| S03 | **v0.1.4 升级漂移同步（spec 003）**：发现源 `entries()` ∪ `guide()`（R1）+ 漂移提醒与 ack 基线（R2）+ 官方 kind 自动归组（R3）；`pnpm check` 全绿（含 client-wiring 漂移全流程断言 + host-settings drift 桶断言）；3084 端到端复验与 3082 安装待收尾（见 PROGRESS） | 🔄 代码完成（2026-09-30） |
 
 ## 当前已知取舍（诚实记录，不掩盖）
 

@@ -6,18 +6,23 @@
  * factory 的 `require` 解析）；这里只做模块导出与注册，**不再自调
  * `__ModuleLoader__.load`**。
  *
- * 接线（spec 002「右侧栏分类框架」）：
- *   ③ 分类框架 → `ctx.slots.inject('sidebar.right.tab.guide', …)`，chain 槽
+ * 接线（spec 002「右侧栏分类框架」+ spec 003「升级漂移同步」）：
+ * ③ 分类框架 → `ctx.slots.inject('sidebar.right.tab.guide', …)`，chain 槽
  *      `select` 恒接管：打开右侧栏看到的起始页就是分组化的入口清单；
- *   ④ 自动发现：读 `ctx.sidebarRightTabs.guide()` 全部引导条目 → 映射表归组；
- *      订阅注册表变更，其它插件后注册的入口也会出现在分类里；
- *   ⑤ 分类配置：绑定 settings 命名空间 `dsh-sidebar-hub`（host 注册、base =
+ *   ④ 自动发现（v0.1.4 R1）：读 `ctx.sidebarRightTabs.entries()` 全量在效定义
+ *      ∪ `guide()` 引导条目（旧宿主无 `entries` 时退回 guide-only），按 kind 去重
+ *      ——上游新引入、即使没有引导条目的能力类型也会出现在分类里；
+ *   ⑤ 漂移检测（v0.1.4 R2）：能力快照存 settings 的 `drift` 桶；DSH 升级后
+ *      新增/移除的入口在分类页顶部提醒，用户「知道了」确认新基线；
+ *   ⑥ 自动归组（v0.1.4 R3）：未登记归属的官方（`@deepseek-ai/*` 实现）kind
+ *      自动落「官方」组，第三方落「其他」；用户显式规则始终优先；
+ *   ⑦ 分类配置：绑定 settings 命名空间 `dsh-sidebar-hub`（host 注册、base =
  *      出厂分类），读写统一走 `catalog/config-store.ts`；服务不可用时退回内存态
  *      并在分类页标出「未持久化」；
- *   ⑥ 设置页卡片：`plugins.bundle.config`（key = 包名 dsh-sidebar-hub，官方
+ *   ⑧ 设置页卡片：`plugins.bundle.config`（key = 包名 dsh-sidebar-hub，官方
  *      0.1.6-alpha.2 起替代旧 `settings.plugin.item`）——表单式维护映射，
  *      与分类页共用同一份配置；
- *   ⑧ 文档渲染器扩展（仅 md/mermaid；Office 自 v0.7 起交还官方内置）。
+ *   ⑩ 文档渲染器扩展（仅 md/mermaid；Office 自 v0.7 起交还官方内置）。
  *
  * 官方 Files / 官方终端 / 官方浏览器：只转发 `openTab('files')` / `openTab('terminal')` /
  * `openTab('browser')`，不注册同名类型、不认领其资源（红线；终端 v0.2、浏览器 v0.5 交还官方内置能力）。
@@ -25,8 +30,11 @@
  */
 import * as React from 'react';
 import { CatalogFramework, type CatalogProps } from './catalog/CatalogFramework.tsx';
-import { createCatalogConfigStore, type SettingsScopeLike } from './catalog/config-store.ts';
-import { PROTECTED_GROUP_IDS, RENAME_LOCKED_GROUP_IDS, resolveCatalog, type CatalogGroup, type DiscoveredEntry } from './catalog/mapping.ts';
+import { createCatalogConfigStore, hasDriftBaseline, type SettingsScopeLike } from './catalog/config-store.ts';
+import {
+  EMPTY_DRIFT, OTHER_GROUP_TITLE, PROTECTED_GROUP_IDS, RENAME_LOCKED_GROUP_IDS, resolveCatalog,
+  type CatalogGroup, type DiscoveredEntry, type DriftView,
+} from './catalog/mapping.ts';
 import { currentLocaleId, setActiveLocale } from './locales.ts';
 import { SettingsCard, type SettingsCardProps, type SettingsGroupOption, type SettingsRow } from './settings/SettingsCard.tsx';
 import { SETTINGS_NAMESPACE, type CategoryConfig } from '../shared/catalog-config.ts';
@@ -55,6 +63,8 @@ interface ClientCtx {
   };
   sidebarRightTabs: {
     register(definition: Record<string, unknown>): () => void;
+    /** 全量在效 tab 定义（v0.1.4 R1；旧宿主无此方法，discover 退回 guide-only）。 */
+    entries?(): readonly { id: string; kind: string; title: (address: string) => string }[];
     guide(): readonly { kind: string; title: () => string; description?: () => string }[];
     subscribe?(listener: () => void): () => void;
   };
@@ -77,6 +87,80 @@ interface ClientCtx {
 interface SnapshotSource<T> {
   getSnapshot(): T;
   subscribe(listener: () => void): () => void;
+}
+
+/** 官方实现前缀：定义 id 以此开头即官方能力（与 `OFFICIAL_KINDS` 互为补充）。 */
+const OFFICIAL_ID_PREFIX = '@deepseek-ai/';
+
+/**
+ * 读一次注册表（v0.1.4 R1）：`entries()` 全量在效定义 ∪ `guide()` 引导条目，
+ * 按 kind 去重。上游新引入的能力类型**即使没有引导条目**也会被发现；
+ * 旧宿主没有 `entries()` 时退回 guide-only（行为与 v0.1.3 一致）。
+ *
+ * 官方判定：定义实现 id 以 `@deepseek-ai/` 开头（官方内置包的前缀约定）；
+ * 只有 guide 条目、拿不到定义 id 时，按 guide 的 providerId 兜底。
+ * @param registry - `ctx.sidebarRightTabs`（entries 为可选面）。
+ * @returns 去重后的入口列表（引导条目的标题/描述优先，其余取定义 title）。
+ */
+function readRegistry(registry: {
+  entries?: () => readonly { id: string; kind: string; title: (address: string) => string }[];
+  guide(): readonly { kind: string; title: () => string; description?: () => string; providerId?: string }[];
+}): readonly DiscoveredEntry[] {
+  let definitions: readonly { id: string; kind: string; title: (address: string) => string }[] = [];
+  let boxes: readonly { kind: string; title: () => string; description?: () => string; providerId?: string }[] = [];
+  try {
+    definitions = typeof registry.entries === 'function' ? registry.entries() : [];
+    boxes = registry.guide();
+  } catch (error) {
+    console.warn('[sidebar-hub] 读取 tab 注册表失败：', error);
+    return [];
+  }
+
+  /** kind → 引导条目（取首个），供展示标题/描述。 */
+  const boxByKind = new Map<string, { kind: string; title: () => string; description?: () => string; providerId?: string }>();
+  for (const box of boxes) if (!boxByKind.has(box.kind)) boxByKind.set(box.kind, box);
+
+  const byKind = new Map<string, DiscoveredEntry>();
+  const fromDefinition = (def: { id: string; kind: string; title: (address: string) => string }): void => {
+    if (byKind.has(def.kind)) return;
+    const box = boxByKind.get(def.kind);
+    let title = '';
+    try {
+      title = box !== undefined ? box.title() : def.title('');
+    } catch {
+      title = def.kind;
+    }
+    let description: string | undefined;
+    try {
+      description = box?.description?.();
+    } catch {
+      description = undefined;
+    }
+    const official = def.id.startsWith(OFFICIAL_ID_PREFIX)
+      || (box?.providerId !== undefined && box.providerId.startsWith(OFFICIAL_ID_PREFIX));
+    byKind.set(def.kind, { kind: def.kind, title, ...(description === undefined ? {} : { description }), ...(official ? { official: true } : {}) });
+  };
+  for (const def of definitions) fromDefinition(def);
+  // guide 里出现、entries 里没有的 kind（旧宿主 / 未进 entries 的引导条目）：
+  // 拿不到定义 id，官方性只能看 guide 的 providerId。
+  for (const box of boxes) {
+    if (byKind.has(box.kind)) continue;
+    let title = '';
+    try {
+      title = box.title();
+    } catch {
+      title = box.kind;
+    }
+    let description: string | undefined;
+    try {
+      description = box.description?.();
+    } catch {
+      description = undefined;
+    }
+    const official = box.providerId !== undefined && box.providerId.startsWith(OFFICIAL_ID_PREFIX);
+    byKind.set(box.kind, { kind: box.kind, title, ...(description === undefined ? {} : { description }), ...(official ? { official: true } : {}) });
+  }
+  return [...byKind.values()];
 }
 
 /**
@@ -133,19 +217,8 @@ export function apply(ctx: ClientCtx): void {
   /** 注册表发现到的入口（apply 后由 refreshCatalog 填充）。 */
   let discovered: readonly DiscoveredEntry[] = [];
 
-  /** 读一次注册表：带引导条目的类型就是用户可见入口（已按 order 排序）。 */
-  const discover = (): readonly DiscoveredEntry[] => {
-    try {
-      return registry.guide().map(box => ({
-        kind: box.kind,
-        title: box.title(),
-        description: box.description?.(),
-      }));
-    } catch (error) {
-      console.warn('[sidebar-hub] 读取 tab 注册表失败：', error);
-      return [];
-    }
-  };
+  /** 读一次注册表（v0.1.4 R1：entries() ∪ guide()，见 readRegistry）。 */
+  const discover = (): readonly DiscoveredEntry[] => readRegistry(registry);
 
   // 三个 UI 数据源：分类页分组、设置卡片行、设置卡片分组选项。
   const catalog = createSource<readonly CatalogGroup[]>(() => resolveCatalog(discovered, configStore.getConfig()));
@@ -187,9 +260,72 @@ export function apply(ctx: ClientCtx): void {
       renameLocked: RENAME_LOCKED_GROUP_IDS.has(group.id),
     })));
 
+  // ── 漂移检测（v0.1.4 R2）：能力快照 vs 已确认基线 ─────────────────────
+  /** 快照签名：只取 kind 集合（标题/官方标记变化不重复提醒）。 */
+  const driftSignature = (kinds: Record<string, unknown>): string => Object.keys(kinds).sort().join('\u0000');
+
+  /** 当前提醒视图（引用稳定；变化才换引用并通知 hooks 订阅者）。 */
+  let driftView: DriftView = { added: [], removed: [] };
+  const driftListeners = new Set<() => void>();
+  const driftSource: SnapshotSource<DriftView> = {
+    getSnapshot: () => driftView,
+    subscribe: (listener) => {
+      driftListeners.add(listener);
+      return () => { driftListeners.delete(listener); };
+    },
+  };
+  const publishDrift = (next: DriftView): void => {
+    if (next === driftView) return;
+    driftView = next;
+    for (const listener of driftListeners) listener();
+  };
+
+  /**
+   * 漂移对账（R2）：当前能力快照 vs 已确认基线。
+   * - 基线未初始化（首跑 / 内存态）→ 静默写入首份快照，不提醒；
+   * - 能力新增/移除 → 出提醒，等用户「知道了」（ackDrift）确认新基线，
+   *   确认后提醒消失且跨会话不复发（基线已写 settings）。
+   * 内存态（settings 不可用）下基线只活在本进程：重启后重新静默初始化，
+   * 与「未持久化」降级语义一致。
+   */
+  const syncDrift = (): void => {
+    const snapshot: Record<string, { title: string; official: boolean }> = {};
+    for (const entry of discovered) snapshot[entry.kind] = { title: entry.title, official: entry.official === true };
+    const stored = configStore.getConfig().drift;
+    const baseline = stored !== undefined && hasDriftBaseline(stored) ? stored : null;
+    if (baseline === null) {
+      if (Object.keys(snapshot).length > 0) configStore.noteDrift(snapshot, driftSignature(snapshot));
+      publishDrift(EMPTY_DRIFT);
+      return;
+    }
+    const added = discovered.filter(entry => baseline.kinds[entry.kind] === undefined);
+    const removed = Object.keys(baseline.kinds).filter(kind => discovered.every(entry => entry.kind !== kind));
+    if (added.length === 0 && removed.length === 0) {
+      publishDrift(EMPTY_DRIFT);
+      return;
+    }
+    const resolved = resolveCatalog(discovered, configStore.getConfig());
+    const groupTitleOf = (kind: string): string => {
+      for (const group of resolved) if (group.items.some(item => item.kind === kind)) return group.title;
+      return OTHER_GROUP_TITLE;
+    };
+    publishDrift({
+      added: added.map(entry => ({ kind: entry.kind, title: entry.title, official: entry.official === true, groupTitle: groupTitleOf(entry.kind) })),
+      removed: removed.map(kind => ({ kind, title: baseline.kinds[kind].title })),
+    });
+  };
+
+  /** 用户「知道了」：以当前能力快照为新基线（noteDrift → onChange → 提醒清空）。 */
+  const ackDrift = (): void => {
+    const snapshot: Record<string, { title: string; official: boolean }> = {};
+    for (const entry of discovered) snapshot[entry.kind] = { title: entry.title, official: entry.official === true };
+    configStore.noteDrift(snapshot, driftSignature(snapshot));
+  };
+
   /** 重算全部 UI 数据源（配置或注册表变化后调用）。 */
   function refreshCatalog(): void {
     discovered = discover();
+    syncDrift();
     catalog.sync();
     rows.sync();
     groupOptions.sync();
@@ -201,7 +337,9 @@ export function apply(ctx: ClientCtx): void {
       {
         name: 'sidebar.right.tab.guide',
         select: () => GUIDE_MATCH,
-        inject: (sessionId: string): Omit<CatalogProps, 'useCatalog'> & { hooks: { catalog: SnapshotSource<readonly CatalogGroup[]> } } => ({
+        inject: (sessionId: string): Omit<CatalogProps, 'useCatalog' | 'useDrift'> & {
+          hooks: { catalog: SnapshotSource<readonly CatalogGroup[]>; drift: SnapshotSource<DriftView> };
+        } => ({
           terminal: {
             load: signal => ctx.webTerminals.launchShells(sessionId, signal),
             launch: path => {
@@ -219,8 +357,9 @@ export function apply(ctx: ClientCtx): void {
           },
           resetCatalog: () => { configStore.reset(); },
           refreshCatalog,
+          ackDrift,
           persistence: () => configStore.persistence(),
-          hooks: { catalog: catalog.source },
+          hooks: { catalog: catalog.source, drift: driftSource },
         }),
       },
       (props: CatalogProps) => React.createElement(CatalogFramework, props),

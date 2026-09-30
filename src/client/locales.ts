@@ -18,6 +18,13 @@ export type LocaleKey =
   | 'catalog.confirmDelete'
   | 'catalog.memoryBadge'
   | 'catalog.memoryHint'
+  | 'catalog.driftNote'
+  | 'catalog.driftAck'
+  | 'catalog.driftAckHint'
+  | 'catalog.driftAdded'
+  | 'catalog.driftRemoved'
+  | 'catalog.driftNew'
+  | 'catalog.driftNewHint'
   | 'settings.title'
   | 'settings.hint'
   | 'settings.groups'
@@ -80,6 +87,13 @@ const DICT: Record<'zh' | 'en', Record<LocaleKey, string>> = {
     'catalog.confirmDelete': '删除分组「{name}」？组内条目会移到「其他」。',
     'catalog.memoryBadge': '未持久化',
     'catalog.memoryHint': 'settings 服务不可用：分类改动只在本次会话生效（刷新后恢复出厂分类）。',
+    'catalog.driftNote': '检测到 {n} 项能力变化（DSH 升级/插件增减）：',
+    'catalog.driftAck': '知道了',
+    'catalog.driftAckHint': '确认并隐藏提醒（以当前能力为新基线）',
+    'catalog.driftAdded': '新增',
+    'catalog.driftRemoved': '移除',
+    'catalog.driftNew': '新',
+    'catalog.driftNewHint': 'DSH 升级后新发现的能力；「知道了」后标记消失',
     'settings.title': '右侧栏分类',
     'settings.hint': '右侧栏起始页按这里的分类展示插件入口。两处都能改：分类页拖拽条目调整分组与顺序，这里用表单精确维护（改归属 / 显示名 / 隐藏 / 新建分组）。隐藏的条目不会出现在分类页。',
     'settings.groups': '分组',
@@ -132,6 +146,13 @@ const DICT: Record<'zh' | 'en', Record<LocaleKey, string>> = {
     'catalog.confirmDelete': 'Delete group "{name}"? Its entries move to "Other".',
     'catalog.memoryBadge': 'Not saved',
     'catalog.memoryHint': 'The settings service is unavailable: category edits last only for this session.',
+    'catalog.driftNote': '{n} capability change(s) detected (DSH upgrade / plugin add-remove):',
+    'catalog.driftAck': 'Got it',
+    'catalog.driftAckHint': 'Acknowledge and dismiss (current capabilities become the new baseline)',
+    'catalog.driftAdded': 'Added',
+    'catalog.driftRemoved': 'Removed',
+    'catalog.driftNew': 'NEW',
+    'catalog.driftNewHint': 'Newly discovered after a DSH upgrade; the badge clears after you acknowledge',
     'settings.title': 'Right-sidebar categories',
     'settings.hint': 'The right sidebar start page lists plugin entries by these categories. Edit them in either place: drag entries on the categories page, or use the form here for exact control (group / label / hide / new group). Hidden entries stay off the categories page.',
     'settings.groups': 'Groups',

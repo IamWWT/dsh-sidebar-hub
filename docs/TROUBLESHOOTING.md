@@ -3,7 +3,7 @@
 ## 当前状态
 
 - 文档性质：历史记录（事故复盘档案：现象 → 根因 → 修复 → 教训）
-- 对应版本：v0.1.3
+- 对应版本：v0.1.4
 - 状态：历史记录，结论按当时口径
 - 维护者：AI + 用户
 
@@ -344,3 +344,23 @@ legacy 迁移 `importLegacyDocument()`（`deepseek-harness/packages/settings/set
    用户设置（locale/preset 等）停在该文件里，需要人工确认是否恢复。
 3. 判断「环境问题 vs 插件问题」时，找一个**不走该服务、但同样写盘的兄弟插件**做对照
    （这里用 `dsh-audio-tts/settings.json` 写盘成功），能一步把「磁盘/权限」整类假设排除掉。
+
+## 2026-09-30：0.1.4 测试实例验收 23/35 —— 12 项 FAIL 全部归因于最小测试 profile
+
+**现象**：3084（`dsh-test/dsh-home-minesweeper`，仅装 dsh-sidebar-hub）跑 `ui-acceptance.mjs` 得 23/35；
+12 项 FAIL（2b/2c/2d/2e/2i/3浏览器/3e/4a/4b/4c/7d 及 2e 相关）集中在「语音转文字/三大工作台/数独/官方浏览器」四类条目缺席。
+
+**归因（逐项核对后结论：非 0.1.4 回归）**：
+1. 该最小 profile 只装了 dsh-sidebar-hub —— audio-tts/工作台/数独插件不在 profile 里，分类页自然没有这些 kind；
+   「浏览器（官方）」缺席是**上游 0.2.0 web profile 默认禁用 `ui-sidebar-browser`**（spec 003 §0 已定案的根因，
+   与本插件无关）；3082 日常实例装齐了这些插件，不会缺项。
+2. 0.1.4 新增行为在该实例**全部 PASS 且首次被真实验证**：官方新 kind（`subagentchat`/`plan`/`changes-review`，
+   0.1.x 时代不存在）经 `entries()` 发现并按 `@deepseek-ai/` 前缀自动落「官方」组（R1+R3 实机证据）；
+   四组顺序、设置卡片（16 行映射表）、files/terminal 官方转发、无 hub-* 残留、无控制台错误。
+3. 该最小实例 settings 为内存态（设置卡片显示「未持久化」）：drift 基线按设计每次启动静默重建，
+   跨重启漂移提醒只在**有持久 settings 的实例**（3082 及装了完整 settings 服务的实例）出现；
+   其状态机由 `test/client-wiring.smoke.mjs` 漂移段 + `ops/validation/drift-prototype.mjs`（12/12）覆盖。
+
+**教训**：测试实例的 plugin 集合决定验收覆盖面 —— 最小 profile 只适合验证「框架自身」，
+条目级断言（语音/工作台/数独/浏览器）必须在装齐插件的实例（或 3082 授权后）验收；
+跑 `ui-acceptance.mjs` 前先 `pnpm dsh plugin --profile web list` 核对在装插件，避免把环境缺项误读为插件回归。

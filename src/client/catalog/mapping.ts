@@ -17,11 +17,16 @@ export {
   type CategoryConfig, type CategoryEntryRule, type CategoryGroup,
 } from '../../shared/catalog-config.ts';
 
-/** 自动发现到的一个入口（来自注册表 guide 条目）。 */
+/** 自动发现到的一个入口（来自注册表；v0.1.4 起兼读 `entries()` 全量定义）。 */
 export interface DiscoveredEntry {
   kind: string;
   title: string;
   description?: string;
+  /**
+   * 是否官方能力（v0.1.4，spec 003 R3）：定义实现 id 以 `@deepseek-ai/` 开头。
+   * 未登记归属的官方 kind 自动落「官方」组；缺省/第三方走「其他」兜底。
+   */
+  official?: boolean;
 }
 
 /** 一个渲染用的条目。 */
@@ -64,6 +69,8 @@ export function resolveCatalog(discovered: readonly DiscoveredEntry[], config: C
     items: [],
   }));
   const byId = new Map(groups.map(group => [group.id, group]));
+  /** 官方兜底组（v0.1.4 R3）：未登记归属的官方 kind 落这里，而非「其他」。 */
+  const officialGroup = groups.find(group => group.id === 'official');
   const others: CatalogItem[] = [];
 
   for (const entry of discovered) {
@@ -73,9 +80,13 @@ export function resolveCatalog(discovered: readonly DiscoveredEntry[], config: C
       kind: entry.kind,
       title: rule?.label !== undefined && rule.label !== '' ? rule.label : entry.title,
       description: entry.description,
-      official: OFFICIAL_KINDS.has(entry.kind),
+      official: OFFICIAL_KINDS.has(entry.kind) || entry.official === true,
     };
-    const target = rule?.groupId !== undefined ? byId.get(rule.groupId) : undefined;
+    // 归属优先级：用户显式规则 > 官方自动归组（R3）> 「其他」兜底。
+    const explicit = rule?.groupId;
+    const target = explicit !== undefined
+      ? byId.get(explicit)
+      : (item.official ? officialGroup : undefined);
     if (target !== undefined) target.items.push(item);
     else others.push(item);
   }
@@ -101,3 +112,25 @@ export function resolveCatalog(discovered: readonly DiscoveredEntry[], config: C
   }
   return groups;
 }
+
+/** 漂移提醒（v0.1.4 R2）：新增的一条能力（落点分组标题 = 自动归组结果）。 */
+export interface DriftAddedKind {
+  kind: string;
+  title: string;
+  official: boolean;
+  groupTitle: string;
+}
+
+/** 漂移提醒：已移除的一条能力（标题取自漂移基线快照）。 */
+export interface DriftRemovedKind {
+  kind: string;
+  title: string;
+}
+
+/** 漂移提醒视图：基线快照与当前注册表快照的差（用户「知道了」后清空）。 */
+export interface DriftView {
+  added: DriftAddedKind[];
+  removed: DriftRemovedKind[];
+}
+
+export const EMPTY_DRIFT: DriftView = Object.freeze({ added: [], removed: [] });

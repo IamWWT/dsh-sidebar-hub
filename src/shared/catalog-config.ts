@@ -35,6 +35,24 @@ export interface CategoryConfig {
   entries: Record<string, CategoryEntryRule>;
   /** 组内条目顺序（groupId → kind[]）；缺省按发现顺序。 */
   order?: Record<string, string[]>;
+  /**
+   * 漂移基线（v0.1.4，spec 003）：最后一次被用户确认过的「注册表能力快照」。
+   * host 的 base 层恒提供 `{kinds:{}, ack:''}`（= 从未初始化）；client 在
+   * settings 上读写，用于 DSH 升级后新增/移除入口的提醒。
+   */
+  drift?: CategoryDrift;
+}
+
+/** 漂移快照里的一个 kind 记录（title 仅用于提醒文案，不参与比对）。 */
+export interface DriftKindRecord {
+  title: string;
+  official: boolean;
+}
+
+/** 能力快照：kind → 记录；`ack` 为快照签名（用户「知道了」后写入）。 */
+export interface CategoryDrift {
+  kinds: Record<string, DriftKindRecord>;
+  ack: string;
 }
 
 /**
