@@ -413,18 +413,20 @@ const fakeScope = {
     writes.push(ops);
     for (const op of ops) { if (op.op === 'set') scopeValue[op.path[0]] = op.value; }
     for (const listener of settingsListeners) listener();
-    return Promise.resolve();
+    return Promise.resolve(true);
   },
   unset: (field) => {
     unsetFields.push(field);
     delete scopeValue[field];
     for (const listener of settingsListeners) listener();
-    return Promise.resolve();
+    return Promise.resolve(true);
   },
 };
-const settingsCb = injectedCallbacks.get('settingsScope');
-assert.equal(typeof settingsCb, 'function', '应通过 ctx.inject 等待 settingsScope');
-settingsCb({ settingsScope: { bind: (spec) => { assert.equal(spec.namespace, 'dsh-sidebar-hub'); assert.equal(typeof spec.decode, 'function'); return fakeScope; } } });
+// v0.1.7：上游客户端 settings 接口改为 `configForms`（`settingsScope` 已移除），
+// 命名空间 = profile 条目 id（sidebar-hub），不再有 decode 参数。
+const settingsCb = injectedCallbacks.get('configForms');
+assert.equal(typeof settingsCb, 'function', '应通过 ctx.inject 等待 configForms');
+settingsCb({ configForms: { get: (entryId) => { assert.equal(entryId, 'sidebar-hub'); return fakeScope; } } });
 
 // 绑定后：以 settings 值为准（mystery 被分到「游戏」组）
 assert.deepEqual(labelsIn('游戏'), ['未知插件'], '绑定 settings 后应采用其 entries');

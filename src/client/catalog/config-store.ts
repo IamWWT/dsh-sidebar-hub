@@ -1,9 +1,10 @@
 /**
  * 分类配置 store：**唯一的配置写入口**（T5/T4/T6 共用）。
  *
- * 数据流（spec 002 §2.5）：
- *   DSH settings 命名空间 `dsh-sidebar-hub`（host 注册，base = 出厂分类）
- *     → client `settingsScope.bind()` 读快照（getSnapshot/subscribe）
+ * 数据流（spec 002 §2.5；v0.1.7 起绑定上游 `configForms` 接口）：
+ *   DSH settings 命名空间 `sidebar-hub`（profile 条目 id；schema = entry 的
+ *     `Config` volatile 字段投影，base = 出厂分类）
+ *     → client `configForms.get('sidebar-hub')` 读快照（getSnapshot/subscribe）
  *     → 本 store 作为「当前配置」的唯一来源
  *     → 任何用户改动（拖拽/重命名/隐藏/恢复默认）经本 store 写回：
  *         · settings 可写 → `mutate()` 整桶替换（原子、带 revision 栅栏）
@@ -23,7 +24,11 @@ export type SettingsOp =
   | { op: 'set'; path: string[]; value: unknown }
   | { op: 'unset'; path: string[] };
 
-/** settings 命名空间绑定的最小面（ui-settings 的 SettingsScope）。 */
+/**
+ * settings 命名空间绑定的最小面（v0.1.7 起对应上游 `ConfigForm`：
+ * `configForms.get(entryId)`；快照多出 base/user/revision，写方法返回
+ * Promise<boolean>——比本接口更宽，结构兼容，只取本接口声明的成员）。
+ */
 export interface SettingsScopeLike<T> {
   getSnapshot(): {
     status: 'loading' | 'ready' | 'unavailable';
@@ -32,8 +37,8 @@ export interface SettingsScopeLike<T> {
     mode: 'host' | 'memory';
   };
   subscribe(listener: () => void): () => void;
-  mutate(ops: readonly SettingsOp[], expectedRevision?: number): Promise<void>;
-  unset(field: string): Promise<void>;
+  mutate(ops: readonly SettingsOp[], expectedRevision?: number): Promise<unknown>;
+  unset(field: string): Promise<unknown>;
 }
 
 /** 配置持久化状态（供设置卡片显示）。 */
@@ -224,9 +229,14 @@ export function createCatalogConfigStore(onChange: () => void): CatalogConfigSto
 
   return {
     getConfig: () => config,
-    persistence: () => (scope === null
-      ? 'memory'
-      : scope.getSnapshot().writable ? 'host' : 'memory'),
+    persistence: () => {
+      // v0.1.7：以上游 ConfigForm 快照的 `mode` 为准（上游按 isLoopback 判定
+      // host/memory；非回环连接下即使接入也是 memory——与「未持久化」语义一致）。
+      if (scope === null) return 'memory';
+      const snapshot = scope.getSnapshot();
+      if (snapshot.status !== 'ready') return 'pending';
+      return snapshot.mode === 'host' && snapshot.writable === true ? 'host' : 'memory';
+    },
 
     attach: (next) => {
       unsubscribe?.();

@@ -405,3 +405,30 @@ entries() 路径会显示，但那正是被纠正的发明行为）。
 
 **教训**：官方 web 起始页有 3 个官方入口是「官方想展示的」；分类页如实呈现即可，缺哪个先查
 上游对应插件是否启用（profile/bundle 层），不要用插件自动补位。
+
+## 2026-10-01：3082 分类页「未持久化」+「检测到 1 项能力变化」一直提示 —— settingsScope 接口被上游移除
+
+**现象**：3082 上「恢复默认」旁出现「未持久化」徽标；漂移提醒「检测到 1 项能力变化」
+（浏览器启用后新增）点「知道了」也消不掉，每次刷新都重新出现。
+
+**根因**：上游 0.2.0-rc.2 重构了 settings 契约，hub 没有适配：
+- client：`settingsScope` 服务**整个移除**，改为 `ctx.configForms.get(entryId)`
+  （`packages/client/ui-settings/src/client/index.ts:53`，persistence 由
+  `isLoopback ? 'host' : 'memory'` 决定）。hub 仍 `ctx.inject(['settingsScope'])`
+  → 绑定永不触发 → 内存态 →「未持久化」。
+- host：`SettingsForms` 移除 `register(ns, schema, {base})`（只有
+  configure/describe/update/replace/mutate）；命名空间 schema 改为从 entry 导出的
+  `Config`（z.object，`.volatile()` 字段投影）自动发现。hub 调 register → 抛错被吞。
+- 漂移「知道了」= 写 settings 的 drift 桶 → 通道是断的 → 基线永远写不进 →
+  每次刷新重新比对 → 提醒无限循环（与「未持久化」同一根因）。
+
+**修复（v0.1.7）**：client 绑 `configForms.get('sidebar-hub')`（命名空间 = profile
+条目 id，cordis.patch.yml insert id；卡片 key 拆为包名常量）；host 删除 register、
+导出 `Config`（设置字段 volatile）；schemastery 3.18.2 → 3.18.4（volatile 支持）。
+3084 复验：`memoryBadge: false`（徽标消失）+ 定向探针拖拽重载持久化 PASS。
+
+**教训**：上游升级后必须第一时间核对「客户端注入名」与「host 服务方法表」两个契约面，
+只读源码/git log 找到替换物（settingsScope → configForms）再迁移；`settingsScope`
+在上游源码已无痕迹，只存在于历史文档（`.agents/notes/archived/`），grep 全仓可快速
+确证。另外上游 `describe` 的命名空间 = entry.options.id，与包名解耦后，插件侧
+`SETTINGS_NAMESPACE` 必须等于 profile 条目 id（`cordis.patch.yml` 的 `- id:`）。

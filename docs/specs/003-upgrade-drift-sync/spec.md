@@ -3,13 +3,25 @@
 ## 状态
 
 - 文档性质：需求规格
-- 对应版本：v0.1.6
+- 对应版本：v0.1.7
 - 状态：**已实现（v0.1.4，2026-09-30）**
   - 需求确认方式：用户 2026-09-30 原话（"dsh 升级后…要同步更新到其他分组里面，避免我不知道"）
     即 R1–R3 的需求确认；Q1–Q3 澄清问题用户未回答，按推荐选项执行（R4 浏览器重启用与
     3082 重启两项保持**用户未批准、未执行**；补丁备于管理根 `ops/browser-web-enable-patch-20260930.md`，
     漂移原形验证见 `ops/validation/drift-prototype.mjs`）。
 - 维护者：AI + 用户
+
+## 修订（v0.1.7，2026-10-01：settings 契约适配）
+
+- **上游 0.2.0-rc.2 重构**：client `settingsScope` → `ctx.configForms`（`configForms.get(entryId)`，
+  persistence 由 `isLoopback` 决定）；host `SettingsForms.register()` 移除，命名空间 schema
+  改为 entry 导出的 `Config`（`.volatile()` 字段投影）自动发现。
+- **适配**：`SETTINGS_NAMESPACE` `dsh-sidebar-hub` → **`sidebar-hub`**（= profile 条目 id；
+  旧包名命名空间退役，旧数据只有空 `{}` 无需迁移）；client 绑 `configForms.get()`；
+  host 删除 register、导出 `Config`；设置卡片 key 拆 `SETTINGS_CARD_KEY`（= 包名）。
+- **效果**：「未持久化」徽标消失、漂移「知道了」真正落盘（提醒不再复发）；
+  复验 3084：`memoryBadge: false` + 拖拽重载持久化 PASS。
+
 
 ## 修订（v0.1.5 / v0.1.6，2026-09-30）
 

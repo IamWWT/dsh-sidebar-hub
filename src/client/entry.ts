@@ -37,7 +37,7 @@ import {
 } from './catalog/mapping.ts';
 import { currentLocaleId, setActiveLocale } from './locales.ts';
 import { SettingsCard, type SettingsCardProps, type SettingsGroupOption, type SettingsRow } from './settings/SettingsCard.tsx';
-import { SETTINGS_NAMESPACE, type CategoryConfig } from '../shared/catalog-config.ts';
+import { SETTINGS_NAMESPACE, SETTINGS_CARD_KEY, type CategoryConfig } from '../shared/catalog-config.ts';
 import { setChunkModuleSystem } from './chunk-loader.ts';
 import { HUB_MARKDOWN_BODY_ID, HubMarkdownBody, type HubMarkdownBodyProps } from './document/markdown-body.tsx';
 import './hub-font.css';
@@ -343,7 +343,7 @@ export function apply(ctx: ClientCtx): void {
     slots.register(
       {
         name: 'plugins.bundle.config',
-        key: SETTINGS_NAMESPACE,
+        key: SETTINGS_CARD_KEY,
         inject: (): Omit<SettingsCardProps, 'useRows' | 'useGroups'> & {
           hooks: { rows: SnapshotSource<readonly SettingsRow[]>; groups: SnapshotSource<readonly SettingsGroupOption[]> };
         } => ({
@@ -375,18 +375,17 @@ export function apply(ctx: ClientCtx): void {
   });
 
   // ── ⑥ 分类配置绑定 settings（可选依赖：缺失则内存态）────────────────────
-  ctx.inject(['settingsScope'], (raw) => {
+  // v0.1.7：上游 0.2.0-rc.2 起客户端 settings 接口为 `configForms`（`settingsScope`
+  // 已移除）。`configForms.get(entryId)` 返回的 ConfigForm 与 SettingsScopeLike
+  // 同构（getSnapshot/subscribe/mutate/unset；snapshot 多出 base/user/revision）。
+  // 命名空间 = profile 条目 id（`sidebar-hub`）；decode 不再需要（normalizeConfig
+  // 已在 store 内做形状把关）。
+  ctx.inject(['configForms'], (raw) => {
     try {
-      const binder = (raw as {
-        settingsScope: { bind<T>(spec: { namespace: string; decode?: (section: unknown) => T | undefined }): SettingsScopeLike<T> };
-      }).settingsScope;
-      configStore.attach(binder.bind<CategoryConfig>({
-        namespace: SETTINGS_NAMESPACE,
-        // 只做形状把关，字段级归一化在 store 的 normalizeConfig 里（容忍旧数据）。
-        decode: (section: unknown) => (
-          typeof section === 'object' && section !== null ? section as CategoryConfig : undefined
-        ),
-      }));
+      const configForms = (raw as {
+        configForms: { get<T>(entryId: string): SettingsScopeLike<T> };
+      }).configForms;
+      configStore.attach(configForms.get<CategoryConfig>(SETTINGS_NAMESPACE));
       ctx.effect(() => () => { configStore.detach(); });
       console.log(`[sidebar-hub] 分类配置已绑定 settings 命名空间：${SETTINGS_NAMESPACE}`);
     } catch (error) {

@@ -9,8 +9,17 @@
  * 只有白名单那几个包），也不得 import React/CSS。
  */
 
-/** 本插件在 DSH settings 中的命名空间（host 注册、client 绑定）。 */
-export const SETTINGS_NAMESPACE = 'dsh-sidebar-hub';
+/**
+ * 本插件在 DSH settings 中的命名空间（host 注册、client 绑定）。
+ * v0.1.7：上游 0.2.0-rc.2 起命名空间 = **profile 条目 id**（cordis.patch.yml
+ * insert 的 `id: sidebar-hub`），不再是包名（`configForms.get(entryId)` 按
+ * entry id 寻址；SettingsForms.describe 以 `entry.options.id` 为 ns）。
+ * 设置页卡片 key 用 `SETTINGS_CARD_KEY`（= bundle 包名，官方契约）与之区分。
+ */
+export const SETTINGS_NAMESPACE = 'sidebar-hub';
+
+/** 设置页卡片 key（官方 `plugins.bundle.config` 槽 keyed by bundle 包名）。 */
+export const SETTINGS_CARD_KEY = 'dsh-sidebar-hub';
 
 /** 一个分组。 */
 export interface CategoryGroup {

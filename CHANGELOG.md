@@ -1,3 +1,30 @@
+## 0.1.7 · 2026-10-01
+
+**settings 契约适配上游 0.2.0-rc.2（修复「未持久化」+ 漂移提醒无限循环）**：
+
+- **根因**：上游把客户端 settings 接口从 `settingsScope` 换成 `ctx.configForms`
+  （`packages/client/ui-settings`）；host 侧 `SettingsForms` 移除 `register(ns, schema,
+  {base})`（改为遍历 entry：`ns = entry.options.id`、schema = 插件导出的 `Config`
+  volatile 字段投影）。hub 仍绑旧名/调旧方法 → 绑定永不触发 → 全程内存态 →
+  「未持久化」徽标 + 漂移「知道了」写不进基线（每次刷新重新提醒）。
+- **client**：`ctx.inject(['settingsScope'])` → `ctx.inject(['configForms'])` +
+  `configForms.get(SETTINGS_NAMESPACE)`；命名空间 `dsh-sidebar-hub` → **`sidebar-hub`**
+  （= profile 条目 id，cordis.patch.yml insert id；configForms 按 entry id 寻址）。
+- **host**：删除失效的 `settings.register()`；入口模块导出 `Config`（z.object：
+  设置字段 groups/entries/order/drift 标 `.volatile()` 投影成设置表单，运行配置
+  字段不标）；`SettingsForms.describe()` 自动发现命名空间（无需注册）。
+- **settings 卡片 key**：拆出 `SETTINGS_CARD_KEY`（= 包名 `dsh-sidebar-hub`），
+  不再复用命名空间（官方 `plugins.bundle.config` 槽按包名 key）。
+- 依赖：`@deepseek-ai/schemastery` 3.18.2 → **3.18.4**（`.volatile()` 支持）。
+- 测试：host-settings 冒烟改为上游 describe 语义（validate → 解 volatile →
+  projectForm；断言设置字段 volatile、运行配置不投影）；client-wiring 假 ctx
+  改 `configForms.get('sidebar-hub')`。
+- 复验（3084 测试实例 0.1.7）：`memoryBadge: false`（「未持久化」消失，0.1.5 时为
+  true）；定向探针「拖 minesweeper → 工作台 → 重载后仍在工作台」= settings 持久化
+  闭环 PASS；`pnpm check` 全绿。
+- 交付：0.1.7 tgz 已装入 3082 profile（dist 物化完整：Config 导出 + volatile）；
+  **重启 3082 生效**（settings 变为可持久化）。
+
 ## 0.1.6 · 2026-09-30
 
 **出厂映射补充 + R4 应用**（承接 0.1.5 的 guide-only 纠正）：

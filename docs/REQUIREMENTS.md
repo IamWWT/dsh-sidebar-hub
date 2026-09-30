@@ -3,7 +3,7 @@
 ## 当前状态
 
 - 文档性质：规格（需求 → 决策 → 实现 → 验收追踪表）
-- 对应版本：v0.1.6
+- 对应版本：v0.1.7
 - 状态：有效
 - 维护者：AI + 用户
 
@@ -24,7 +24,7 @@
 | DSH 升级引入/移除能力时**用户能察觉**（2026-09-30 用户原话「避免我不知道」） | 能力快照存 settings `dsh-sidebar-hub` 的 `drift` 桶：首跑静默初始化基线；此后注册表新增/移除入口 → 分类页顶部提醒（新增/移除分列 + 落点分组），「知道了」写新基线并保持安静（跨重启）；v0.1.5 起对账对象 = **guide 入口集**（与分类页同源） | spec 003 R2 |
 | ~~官方能力不该落进「其他」~~ → **v0.1.5 已撤销（用户纠正）** | v0.1.4 曾按 `@deepseek-ai/` 前缀推断「官方」并自动归组/打角标——这是插件自己的判断，会把官方起始页没有的入口（如内部查看器）凭空挪进「官方」组；v0.1.5 起**不做任何官方性推断**：归组只认显式规则（出厂映射 + 用户编辑），未登记一律落「其他」；官方入口（files/terminal/browser）在出厂表显式列出 | spec 003 R3（v0.1.5 撤销） |
 | 浏览器升级后从侧栏消失，用户无感知（2026-09-29 事故） | 根因在上游 web profile 默认禁用 `ui-sidebar-browser`（非本插件 bug，证据 spec 003 §0）；重启用 = 3082 profile 层 `cordis.patch.yml` 补丁（管理根 `ops/browser-web-enable-patch-20260930.md`）：**2026-09-30 已应用**（用户反馈「没看到三个官方，只看到2个」= 要求浏览器回来；备份 `cordis.patch.yml.bak-browser-*`），**重启 3082 后生效** | spec 003 R4（已应用，重启待用户） |
-| 配置全局一份、可持久化 | DSH settings 命名空间 `dsh-sidebar-hub`；`base` = 出厂分类，「恢复默认」= `unset` 回落 base | spec §2.5 |
+| 配置全局一份、可持久化 | DSH settings 命名空间 `sidebar-hub`（v0.1.7 起 = **profile 条目 id**，旧包名 `dsh-sidebar-hub` 退役）；绑定上游 `configForms`（旧 `settingsScope` 已移除）；`base` = 出厂分类（entry `Config` 的 volatile 字段默认值），「恢复默认」= `unset` 回落 base | spec §2.5 / v0.1.7 settings 契约适配 |
 | 全屏展示（覆盖整个浏览器） | **不由本插件实现**：属 DSH WEB 层能力，用户在应用层处理；插件只做侧栏内容 | spec §2.6（非目标） |
 | 独立路由 | `/shub/*`（JSON 网关 + WS + 媒体/HTML/上传 + `/shub/bundle` 惰性 chunk），前置 trust-fence | plan §1 |
 | 官方文件预览增强：docx/ppt 看不了、md 里 mermaid 不渲染（v0.3） | 走**官方 `documentPreviews` 扩展点**注册 `priority:'extension'` 渲染器（不碰官方源码/files 树/`text` 类型）：`dsh-sidebar-hub/markdown`（md 接管 + mermaid 图 + 本地图片）+ `dsh-sidebar-hub/office`（mammoth docx / jszip pptx·xlsx 文本提取）；重型库惰性 chunk（`/shub/bundle`） | spec §0（v0.3）/ §7 A15–A19 |
