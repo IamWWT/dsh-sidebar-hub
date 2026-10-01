@@ -45,7 +45,7 @@ DSH_HOME=~/.dsh-dev pnpm dsh plugin --profile web add \
 
 - 装完核对 `~/.dsh-dev/profiles/web/node_modules/dsh-sidebar-hub/dist` 真实存在。
 - **重打包必须升版本号**（同版本 pnpm 按 integrity 判「已最新」，不重解压 → 缺 `dist/` 启动即报错）。
-- 重启 3082 **需用户同意**：`systemctl --user restart dsh-dev-web`；windows-lite 手动重启 dsh 进程。
+- 重启 3082 **需用户同意**：`systemctl --user restart dsh-dev-web`；windows-lite 退出重开桌面应用。
 - 装进**测试实例**（禁止直接动 3082）：`cd dsh-plugins/dsh-test/deepseek-harness`，`DSH_HOME=<独立测试 DSH_HOME> pnpm dsh web --port 3084 --no-open`，再 `pnpm dsh plugin --profile web add <本插件目录或 tgz>`。
 
 ## 构建与验证
@@ -79,7 +79,7 @@ node test/probe-tab.mjs --url "http://127.0.0.1:3085/?token=..." --kind troubles
 | 环境 | 支持度 | 验证状态 |
 |---|---|---|
 | `ubuntu-4090`（源码树 + systemd 3082；验证用测试实例 3085） | 全量 | `pnpm check` 全绿 + 测试实例 UI 验收 **35/35**（截图 `docs/verify-v08/`）；3082 始终未碰 |
-| `windows-lite`（源码树 + `dsh-dev` 手动启动，无 systemd） | 全量 | 本插件无本地模型 / 数据库 / Python 依赖，行为一致；**本版实机验收未记录 → 未验证** |
+| `windows-lite`（官方桌面版 profile `desktop`，无 systemd） | 全量 | 本插件无本地模型 / 数据库 / Python 依赖，行为一致；**本版实机验收未记录 → 未验证** |
 
 - 环境差异走配置键（本插件配置 = DSH settings 命名空间 `dsh-sidebar-hub`，全局一份），不做 OS 探测分支；`systemctl` 与 Bash 命令仅适用于 `ubuntu-4090`。
 - 无门禁实例 ≠ 环境可用：读 `dshAuth` 的插件在无会话时全 401，自动化验收可在无门禁实例跑，**人工交付**需登录（`/login`）或用门禁为开的 3082。
