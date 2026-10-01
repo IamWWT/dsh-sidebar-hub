@@ -45,7 +45,7 @@ DSH_HOME=~/.dsh-dev pnpm dsh plugin --profile web add \
 
 - 装完核对 `~/.dsh-dev/profiles/web/node_modules/dsh-sidebar-hub/dist` 真实存在。
 - **重打包必须升版本号**（同版本 pnpm 按 integrity 判「已最新」，不重解压 → 缺 `dist/` 启动即报错）。
-- 重启 3082 **需用户同意**：`systemctl --user restart dsh-dev-web`；windows-lite 退出重开桌面应用。
+- 重启 3082 **需用户同意**：`systemctl --user restart dsh-dev-web`；windows-lite 托盘退出后重开桌面应用。
 - 装进**测试实例**（禁止直接动 3082）：`cd dsh-plugins/dsh-test/deepseek-harness`，`DSH_HOME=<独立测试 DSH_HOME> pnpm dsh web --port 3084 --no-open`，再 `pnpm dsh plugin --profile web add <本插件目录或 tgz>`。
 
 ## 构建与验证
