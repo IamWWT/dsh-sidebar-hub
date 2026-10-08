@@ -13,7 +13,7 @@
 ## T1 清理与骨架 — ✅ 完成
 
 - 目标：删掉错误方向的实施（容器内分层），保留可复用资产，目录按新方向落位。
-- 改动：删 `Categories.tsx`/`ContentArea.tsx`/`HubShell.tsx`/`hub-store.ts`/`hub.css`、`docs/specs/001-*`；旧 `hub.*` 文案键换成 `catalog.*`/`settings.*`；新目录 `catalog/`、`settings/`、`tabs/`、`shared/`。
+- 改动：删 `Categories.tsx`/`ContentArea.tsx`/`HubShell.tsx`/`hub-store.ts`/`hub.css`、`docs/需求/` 与 `docs/管理/`001-*`；旧 `hub.*` 文案键换成 `catalog.*`/`settings.*`；新目录 `catalog/`、`settings/`、`tabs/`、`shared/`。
 - 完成定义：`pnpm typecheck` 通过（无悬空引用）；`pnpm check` 全绿。
 - 验证：`pnpm check`（build + typecheck + node --check + 冒烟）绿；`grep -rn "HubShell\|createHubStore(" src` 只剩新 store。
 

@@ -132,7 +132,7 @@
 3. 3082 实例（用户批准后重装 + 重启 + 应用浏览器补丁）：右侧栏恢复浏览器入口；官方组含
    文件/终端/浏览器；分类页无静默缺失。
 4. `pnpm check` 全绿；双端产物门禁通过；设置卡片新增行可维护「新」条目的归属。
-5. 文档同步：`docs/index.md`、`REQUIREMENTS.md`、本 spec、`TROUBLESHOOTING.md`（浏览器消失事故）。
+5. 文档同步：`docs/README.md`、`REQUIREMENTS.md`、本 spec、`TROUBLESHOOTING.md`（浏览器消失事故）。
 
 ## 5. 风险与回滚
 

@@ -12,8 +12,8 @@
 
 ## 开发流程（SDD，强制）
 
-按 [GitHub Spec Kit](https://github.com/github/spec-kit) 流程，规格在 `docs/specs/<id>/`
-（当前有效：`docs/specs/002-right-sidebar-categories/spec.md`）：Specify（spec.md：需求/非目标/
+按 [GitHub Spec Kit](https://github.com/github/spec-kit) 流程，规格在 `docs/需求/` 与 `docs/管理/`<id>/`
+（当前有效：`docs/需求/BRD-002-right-sidebar-categories.md`）：Specify（spec.md：需求/非目标/
 验收标准）→ Clarify → Plan（host/client 划分、插槽接线、合约出处、风险）→ Tasks → Implement →
 Converge（`pnpm check` + 真实实例 UI 逐条对照验收）。**规格未获用户确认前禁止进入实现。**
 
@@ -56,7 +56,7 @@ node test/probe-tab.mjs --url "http://127.0.0.1:3085/?token=..." --kind <kind> -
 `DSH_HOME=<独立测试 DSH_HOME> pnpm dsh web --port 3084 --no-open`，再
 `pnpm dsh plugin --profile web add <本插件目录或 tgz>`。
 
-## 关键契约（出处见 `docs/specs/002-*/plan.md` §2）
+## 关键契约（出处见 `docs/需求/` 与 `docs/管理/`002-*/plan.md` §2）
 
 - `sidebar.right.tab.guide` 是 **chain** 槽：注册需 `select`（首个返回非 `null` 者接管），纯函数、
   返回稳定引用；自动发现用 `ctx.sidebarRightTabs.guide()` → `{kind, order, title()}[]` + `subscribe()`；
@@ -84,6 +84,6 @@ node test/probe-tab.mjs --url "http://127.0.0.1:3085/?token=..." --kind <kind> -
 
 ## 文档同步
 
-- 功能/架构/决策变更 → 同步 `docs/index.md`、`docs/REQUIREMENTS.md`、`docs/specs/<id>/*`。
-- 踩坑/事故 → 追加 `docs/TROUBLESHOOTING.md`（现象 → 根因 → 修复 → 教训）。
+- 功能/架构/决策变更 → 同步 `docs/README.md`、`docs/需求/BRD-业务需求说明书.md`、`docs/需求/` 与 `docs/管理/`<id>/*`。
+- 踩坑/事故 → 追加 `docs/管理/RMP-风险管理.md`（现象 → 根因 → 修复 → 教训）。
 - README 只描述当前行为，历史决策留 docs；通用规则见 `../AGENTS.md` 与 `../../AGENTS.md`。

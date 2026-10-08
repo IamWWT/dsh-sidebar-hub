@@ -8,7 +8,7 @@
 - 维护者：AI + 用户
 
 > 本文件是**本插件唯一进度真源**（谁开发谁维护）；工作区根 `progress.md` 仅做总分发索引。
-> 需求与架构见 [REQUIREMENTS.md](REQUIREMENTS.md) / `specs/`，踩坑记录见 [TROUBLESHOOTING.md](TROUBLESHOOTING.md)。
+> 需求与架构见 [REQUIREMENTS.md](../需求/BRD-业务需求说明书.md) / `specs/`，踩坑记录见 [TROUBLESHOOTING.md](RMP-风险管理.md)。
 
 ## 🔄 进行中（中断点）
 

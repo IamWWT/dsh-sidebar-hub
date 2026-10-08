@@ -125,7 +125,7 @@ MIT 项目（见 `LICENSE` 署名），官方仍无 mermaid。
 - 基线：better-sidebar **v0.19.0** / commit `e786d8f`。
 - 方式：定期 `git fetch` + `git log --oneline e786d8f..origin/main` 审阅上游新提交，
   逐条判断是否影响我们吸收改造过的文件，需要时同步补丁进本插件源码。
-- 跟踪记录维护在本规格或 `docs/REQUIREMENTS.md`。
+- 跟踪记录维护在本规格或 `docs/需求/BRD-业务需求说明书.md`。
 
 ## 6. 落地顺序（Q11 已确认）
 

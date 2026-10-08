@@ -88,13 +88,13 @@ node test/probe-tab.mjs --url "http://127.0.0.1:3085/?token=..." --kind troubles
 
 | 文件 | 一句话 |
 |---|---|
-| [docs/index.md](docs/index.md) | 总览与文档导航（插件定位与阅读顺序） |
-| [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | 需求→决策→实现→验收追踪表（含已知取舍） |
-| [docs/PROGRESS.md](docs/PROGRESS.md) | 本插件唯一进度真源 |
-| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | 事故复盘（现象→根因→修复→教训） |
-| [docs/research-sidebar-layout-2026-09-11.md](docs/research-sidebar-layout-2026-09-11.md) | 「右侧边栏内容排列方式」调研（含上游源码出处） |
-| `docs/specs/002-right-sidebar-categories/` | 当前有效规格：spec（已冻结）/ plan（合约查证）/ tasks |
-| `docs/specs/20260925-native-entry-ui/` | 保留官方 guide provider 完整入口 + 恢复终端 shell 下拉的修复规格 |
+| [`docs/README.md`](`docs/README.md`) | 总览与文档导航（插件定位与阅读顺序） |
+| [`docs/需求/BRD-业务需求说明书.md`](`docs/需求/BRD-业务需求说明书.md`) | 需求→决策→实现→验收追踪表（含已知取舍） |
+| [`docs/管理/PP-项目计划.md`](`docs/管理/PP-项目计划.md`) | 本插件唯一进度真源 |
+| [`docs/管理/RMP-风险管理.md`](`docs/管理/RMP-风险管理.md`) | 事故复盘（现象→根因→修复→教训） |
+| [docs/research-sidebar-layout-2026-09-11.md](docs/分析/DAS-侧栏布局调研-20260911.md) | 「右侧边栏内容排列方式」调研（含上游源码出处） |
+| `docs/需求/` + `docs/管理/` 下同 id 文件 | 当前有效规格：spec（已冻结）/ plan（合约查证）/ tasks |
+| `docs/需求/` + `docs/管理/` 下同 id 文件 | 保留官方 guide provider 完整入口 + 恢复终端 shell 下拉的修复规格 |
 | `docs/prototype/` | 分类式侧边栏原型（`right-sidebar-categorized-prototype.html`、`q7-q8-explainer.html`、截图） |
 | `docs/verify*/` | 历次测试实例 UI 验收截图（`verify-v08` = 35/35 那一轮） |
 | [AGENTS.md](AGENTS.md) | 开发规范（SDD 流程、红线、关键契约、命令） |
@@ -108,4 +108,4 @@ node test/probe-tab.mjs --url "http://127.0.0.1:3085/?token=..." --kind troubles
 
 ## 附：仓库与共用目录
 
-唯一代码仓库 = `IamWWT/dsh-plugins`（private monorepo），本插件目录 `dsh-plugins/dsh-sidebar-hub/`；分支 `main`（集成）/ `ubuntu`（agent 开发）/ `windows`（用户）。遵循 [DeepSeek 共用目录约定](../dsh-agent-presets/docs/DIRECTORY-LAYOUT.md)，管理根统一写作 `<DEEPSEEK_ROOT>`（`.../deepseek/`）；历史部署记录不能视为当前机器状态。
+唯一代码仓库 = `IamWWT/dsh-plugins`（private monorepo），本插件目录 `dsh-plugins/dsh-sidebar-hub/`；分支 `main`（集成）/ `ubuntu`（agent 开发）/ `windows`（用户）。遵循 [DeepSeek 共用目录约定](../../dsh-agent-presets/docs/DIRECTORY-LAYOUT.md)，管理根统一写作 `<DEEPSEEK_ROOT>`（`.../deepseek/`）；历史部署记录不能视为当前机器状态。
