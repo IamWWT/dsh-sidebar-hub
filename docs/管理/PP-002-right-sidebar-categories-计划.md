@@ -8,7 +8,7 @@
 - 维护者：AI + 用户
 
 - 状态：**已实现并冒烟验证**（真实实例 UI 验收待 T7）/ 日期 2026-09-13
-- 前置：[spec.md](../需求/BRD-002-right-sidebar-categories.md)（需求已冻结）
+- 前置：[BRD-002-right-sidebar-categories.md](../需求/BRD-002-right-sidebar-categories.md)（需求已冻结）
 
 ## 1. 架构
 

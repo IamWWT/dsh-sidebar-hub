@@ -92,7 +92,7 @@ node test/probe-tab.mjs --url "http://127.0.0.1:3085/?token=..." --kind troubles
 | [`docs/需求/BRD-业务需求说明书.md`](`docs/需求/BRD-业务需求说明书.md`) | 需求→决策→实现→验收追踪表（含已知取舍） |
 | [`docs/管理/PP-项目计划.md`](`docs/管理/PP-项目计划.md`) | 本插件唯一进度真源 |
 | [`docs/管理/RMP-风险管理.md`](`docs/管理/RMP-风险管理.md`) | 事故复盘（现象→根因→修复→教训） |
-| [docs/research-sidebar-layout-2026-09-11.md](docs/分析/DAS-侧栏布局调研-20260911.md) | 「右侧边栏内容排列方式」调研（含上游源码出处） |
+| [docs/分析/DAS-侧栏布局调研-20260911.md](docs/分析/DAS-侧栏布局调研-20260911.md) | 「右侧边栏内容排列方式」调研（含上游源码出处） |
 | `docs/需求/` + `docs/管理/` 下同 id 文件 | 当前有效规格：spec（已冻结）/ plan（合约查证）/ tasks |
 | `docs/需求/` + `docs/管理/` 下同 id 文件 | 保留官方 guide provider 完整入口 + 恢复终端 shell 下拉的修复规格 |
 | `docs/prototype/` | 分类式侧边栏原型（`right-sidebar-categorized-prototype.html`、`q7-q8-explainer.html`、截图） |

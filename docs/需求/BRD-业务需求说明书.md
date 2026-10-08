@@ -7,9 +7,9 @@
 - 状态：有效
 - 维护者：AI + 用户
 
-> 追踪表（以终为始，只记当前有效方向）。规格：[specs/002-right-sidebar-categories/spec.md](../需求/BRD-002-right-sidebar-categories.md)（需求已冻结）；
-> 技术：[plan.md](../管理/PP-002-right-sidebar-categories-计划.md)；任务与状态：[tasks.md](../管理/PP-002-right-sidebar-categories-任务.md)。
-> 事故复盘：[TROUBLESHOOTING.md](../管理/RMP-风险管理.md)。
+> 追踪表（以终为始，只记当前有效方向）。规格：[../需求/BRD-002-right-sidebar-categories.md](../需求/BRD-002-right-sidebar-categories.md)（需求已冻结）；
+> 技术：[PP-002-right-sidebar-categories-计划.md](../管理/PP-002-right-sidebar-categories-计划.md)；任务与状态：[PP-002-right-sidebar-categories-任务.md](../管理/PP-002-right-sidebar-categories-任务.md)。
+> 事故复盘：[RMP-风险管理.md](../管理/RMP-风险管理.md)。
 
 ## 需求 → 决策
 
