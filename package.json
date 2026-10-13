@@ -1,6 +1,6 @@
 {
   "name": "dsh-sidebar-hub",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "DSH 侧边栏分类框架：把右侧栏起始页换成按功能分组的插件入口（官方 / 工作台 / 工具 / 游戏 / 其他，v0.8 起四组），可拖拽分组与设置页维护，配置存 DSH settings；官方终端/浏览器/Office 预览由官方内置接管，md(mermaid) 渲染器自研；v0.6 起 hub 自研内容类型全部移除，仅做入口编排。",
   "keywords": [
     "dsh",

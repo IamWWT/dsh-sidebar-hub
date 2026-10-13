@@ -1,6 +1,6 @@
 /**
  * /shub/* 路由注册：JSON 网关 + 媒体/上传/沙箱 HTML 预览 + agent-opens WS。
- * 全部前置 trust-fence（isTrustedApiRequest + webRuntime.trustedHosts）。
+ * 全部前置 trust-fence（isTrustedApiRequest + webStartup.trustedHosts）。
  * 终端 WS（/shub/ws/terminal、/shub/ws/agent-terminals）自 v0.2 起随自研终端
  * 移除——官方 kind='terminal' 与 dsh-tool-terminal 接管。
  */
@@ -43,7 +43,7 @@ export function registerHubRoutes(
   agentOpenRegistry: AgentOpenRegistry,
 ): Array<() => void> {
   const disposers: Array<() => void> = [];
-  const fence = (req: SidebarHttpRequest): boolean => isTrustedApiRequest(req, ctx.webRuntime.trustedHosts);
+  const fence = (req: SidebarHttpRequest): boolean => isTrustedApiRequest(req, ctx.webStartup.trustedHosts);
   const api = buildApi(ctx, cfg);
 
   // ── JSON 网关：/shub/api/<method>（POST）──────────────────────────────

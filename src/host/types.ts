@@ -1,6 +1,6 @@
 /**
  * 类型面（自研精简版）：结构对齐 dsh 的 webServer / sessions / sessionPersistence
- * / webRuntime / tools 服务的实际形状。
+ * / webStartup / tools 服务的实际形状。
  * context-types.ts，只保留本插件 host 侧消费的面。
  */
 
@@ -82,8 +82,8 @@ export interface SidebarSessionHandle {
   close(): Promise<void>;
 }
 
-/** webRuntime 服务面（trustedHosts 供 API fence）。 */
-export interface SidebarWebRuntime {
+/** webStartup 服务面（trustedHosts 供 API fence）。 */
+export interface SidebarWebStartup {
   trustedHosts: readonly string[];
 }
 
@@ -127,7 +127,7 @@ export interface Context {
   logger?: { warn(message: string): void; info(message: string): void };
   webServer: SidebarWebServer;
   sessions: SidebarSessionsService;
-  webRuntime: SidebarWebRuntime;
+  webStartup: SidebarWebStartup;
   tools?: SidebarToolsService;
 }
 

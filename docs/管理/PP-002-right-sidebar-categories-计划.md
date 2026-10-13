@@ -94,4 +94,4 @@ hub-* 六项 → 工程与任务/浏览与工具；audio-transcriber/audio-tts �
 
 - **host 全部**：`api.ts`（/shub 方法表）/`routes.ts`/`pty-*`/`git.ts`/`jobs-routes.ts`/`subagent-*`/`browser-probe.ts`/`fs-*`/`terminal-ws.ts`/`agent-opens.ts`/`tools.ts`/`trust-fence.ts`/`session-*`/`wire.ts`/`html-route.ts`/`config.ts`
 - **client 视图**：`TerminalView`/`BrowserView`/`GitLens`/`ChangesTab`/`DiffPane`/`SessionLens`/`SubagentView` + `diff/*`/`ops.ts`/`terminal-*`/`theme.ts`/`paths.ts`/`use-polling.ts`/`icons.tsx`/`locales.ts`
-- **已修复的构建契约**：client closure-factory（`build.mjs`）、host `inject: ['webServer','webRuntime','sessions']`、`/shub` 路由前缀
+- **已修复的构建契约**：client closure-factory（`build.mjs`）、host `inject: ['webServer','webStartup','sessions']`、`/shub` 路由前缀

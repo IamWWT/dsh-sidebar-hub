@@ -25,7 +25,7 @@ export { SETTINGS_NAMESPACE, SETTINGS_CARD_KEY } from './settings.ts';
 export const name = 'sidebar-hub';
 
 /** 硬依赖：浏览器 HTTP/WS 载体服务（负责 /shub/* 路由与 upgrade）。 */
-export const inject = ['webServer', 'webRuntime', 'sessions'];
+export const inject = ['webServer', 'webStartup', 'sessions'];
 
 
 /** Cordis 插件入口。config 来自 profile patch 的 config: 段（经 `Config` schema 校验）。 */

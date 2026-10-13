@@ -1,3 +1,21 @@
+## 0.1.8 · 2026-10-12
+
+**服务迁移：`webRuntime` → `webStartup`（修复 alpha.2 下插件 pending 无法激活）**：
+
+- **根因**：上游 alpha.2 已删除 `webRuntime` 服务（`packages/bundle/web-app/src/index.ts`
+  不再 `provide(WEB_RUNTIME_SERVICE)`），改由 `web-startup` 行提供 `webStartup`
+  （`WEB_STARTUP_SERVICE`，见 `packages/bundle/web-app/src/startup.ts`）。插件仍 `inject`
+  旧服务 → 依赖永不满足 → journal 记
+  `sidebar-hub (dsh-sidebar-hub): pending (waiting for service: webRuntime)`，
+  全部 `/shub/*` 路由未注册。
+- **host**：`inject` 里 `'webRuntime'` → `'webStartup'`；`ctx.webRuntime.trustedHosts` →
+  `ctx.webStartup.trustedHosts`（fence 语义不变：`trustedHosts` = 本次调用的
+  `--trusted-host` authority 列表）。类型面 `SidebarWebRuntime` → `SidebarWebStartup`、
+  上下文字段 `webRuntime` → `webStartup`，含 JSDoc。
+- 未使用 `ctx.webRuntime.lanAddresses`，无删除项；未做无关重构。
+- 依据：上游迁移指南 `docs/upgrade-guide/v0.2.1-alpha.1/web-listener-trust-config/guide.zh.md`。
+- 复验：`pnpm check` 全绿；`grep -rn 'webRuntime' src dist build.mjs test cordis.patch.yml` = 0 处。
+
 ## 0.1.7 · 2026-10-01
 
 **settings 契约适配上游 0.2.0-rc.2（修复「未持久化」+ 漂移提醒无限循环）**：

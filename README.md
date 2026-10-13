@@ -36,11 +36,11 @@
 
 ```bash
 cd dsh-plugins/dsh-sidebar-hub
-pnpm check && pnpm pack        # 产出 dsh-sidebar-hub-0.1.7.tgz
+pnpm check && pnpm pack        # 产出 dsh-sidebar-hub-0.1.8.tgz
 
 cd ../../deepseek-harness
 DSH_HOME=~/.dsh-dev pnpm dsh plugin --profile web add \
-  /home/wwt/Downloads/aigc/proj/deepseek/dsh-plugins/dsh-sidebar-hub/dsh-sidebar-hub-0.1.7.tgz
+  /home/wwt/Downloads/aigc/proj/deepseek/dsh-plugins/dsh-sidebar-hub/dsh-sidebar-hub-0.1.8.tgz
 ```
 
 - 装完核对 `~/.dsh-dev/profiles/web/node_modules/dsh-sidebar-hub/dist` 真实存在。
@@ -102,9 +102,9 @@ node test/probe-tab.mjs --url "http://127.0.0.1:3085/?token=..." --kind troubles
 
 ## 版本号
 
-**0.1.7**（`package.json.version` = tgz 文件名 `dsh-sidebar-hub-0.1.7.tgz`）
+**0.1.8**（`package.json.version` = tgz 文件名 `dsh-sidebar-hub-0.1.8.tgz`）
 
-> 注：[CHANGELOG.md](CHANGELOG.md) 详见 0.1.3–0.1.6（修复/漂移/纠正/归组）与 0.1.7（settings 契约适配）。
+> 注：[CHANGELOG.md](CHANGELOG.md) 详见 0.1.3–0.1.6（修复/漂移/纠正/归组）、0.1.7（settings 契约适配）与 0.1.8（`webRuntime` → `webStartup` 服务迁移）。
 
 ## 附：仓库与共用目录
 
