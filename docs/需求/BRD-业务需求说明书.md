@@ -3,11 +3,15 @@
 ## 当前状态
 
 - 文档性质：规格（需求 → 决策 → 实现 → 验收追踪表）
-- 对应版本：v0.1.7
+- 对应版本：v0.1.8
 - 状态：有效
 - 维护者：AI + 用户
 
-> 追踪表（以终为始，只记当前有效方向）。规格：[../需求/BRD-002-right-sidebar-categories.md](../需求/BRD-002-right-sidebar-categories.md)（需求已冻结）；
+> 注（2026-10-13）：v0.1.8 无需求/行为变化，仅宿主服务注入改名（`webRuntime` → `webStartup`，修复
+> alpha.2 下插件 pending 无法激活），见 [CHANGELOG.md](../../CHANGELOG.md)；当前态以插件
+> [README.md](../../README.md) 为准。
+>
+> 追踪表（以终为始，只记当前有效方向）。规格：[BRD-002-right-sidebar-categories.md](BRD-002-right-sidebar-categories.md)（需求已冻结）；
 > 技术：[PP-002-right-sidebar-categories-计划.md](../管理/PP-002-right-sidebar-categories-计划.md)；任务与状态：[PP-002-right-sidebar-categories-任务.md](../管理/PP-002-right-sidebar-categories-任务.md)。
 > 事故复盘：[RMP-风险管理.md](../管理/RMP-风险管理.md)。
 
@@ -21,9 +25,9 @@
 | ~~吸收 better-sidebar 的常用功能~~ → **v0.6 起不再吸收**（历史决策，已全线取消） | 初版曾以五个 `hub-*` 类型（任务管理 / Subagent / Git / 文件变动 / 浏览器）自研承接并脱钩 better-sidebar 运行时；**v0.6 起全部移除**，本插件只做入口编排。终端（v0.2）、浏览器（v0.5）、Office 预览（v0.7）均交还官方内置 | spec §2.2 / §0（v0.2、v0.6、v0.7）/ §3 |
 | 官方 files 保持原样 | **不注册** `kind:'files'` extension、**不认领** `dsh-resource://file/**`；只在分类里 `openTab('files')` 转发并标「官方」 | spec §2.4（红线） |
 | 分类可维护、可自定义 | 出厂映射表 + 运行时**自动发现**（v0.1.6：**只读 `guide()`** 引导条目——官方起始页能力的唯一公开来源；v0.1.4 曾读 `entries()` 类型注册表，把纯资源查看器（plan/changes-review/subagentchat…）当入口灌进分类页，用户 2026-09-30 纠正后 v0.1.5 起改回 guide-only）；分类页拖拽与设置页表单两处可编辑 | spec §2.5 / spec 003 R1（v0.1.5 修订） |
-| DSH 升级引入/移除能力时**用户能察觉**（2026-09-30 用户原话「避免我不知道」） | 能力快照存 settings `dsh-sidebar-hub` 的 `drift` 桶：首跑静默初始化基线；此后注册表新增/移除入口 → 分类页顶部提醒（新增/移除分列 + 落点分组），「知道了」写新基线并保持安静（跨重启）；v0.1.5 起对账对象 = **guide 入口集**（与分类页同源） | spec 003 R2 |
+| DSH 升级引入/移除能力时**用户能察觉**（2026-09-30 用户原话「避免我不知道」） | 能力快照存 settings `sidebar-hub` 的 `drift` 桶（v0.1.7 前为旧包名 `dsh-sidebar-hub`）：首跑静默初始化基线；此后注册表新增/移除入口 → 分类页顶部提醒（新增/移除分列 + 落点分组），「知道了」写新基线并保持安静（跨重启）；v0.1.5 起对账对象 = **guide 入口集**（与分类页同源） | spec 003 R2 |
 | ~~官方能力不该落进「其他」~~ → **v0.1.5 已撤销（用户纠正）** | v0.1.4 曾按 `@deepseek-ai/` 前缀推断「官方」并自动归组/打角标——这是插件自己的判断，会把官方起始页没有的入口（如内部查看器）凭空挪进「官方」组；v0.1.5 起**不做任何官方性推断**：归组只认显式规则（出厂映射 + 用户编辑），未登记一律落「其他」；官方入口（files/terminal/browser）在出厂表显式列出 | spec 003 R3（v0.1.5 撤销） |
-| 浏览器升级后从侧栏消失，用户无感知（2026-09-29 事故） | 根因在上游 web profile 默认禁用 `ui-sidebar-browser`（非本插件 bug，证据 spec 003 §0）；重启用 = 3082 profile 层 `cordis.patch.yml` 补丁（管理根 `ops/browser-web-enable-patch-20260930.md`）：**2026-09-30 已应用**（用户反馈「没看到三个官方，只看到2个」= 要求浏览器回来；备份 `cordis.patch.yml.bak-browser-*`），**重启 3082 后生效** | spec 003 R4（已应用，重启待用户） |
+| 浏览器升级后从侧栏消失，用户无感知（2026-09-29 事故） | 根因在上游 web profile 默认禁用 `ui-sidebar-browser`（非本插件 bug，证据 spec 003 §0）；重启用 = 3082 profile 层 `cordis.patch.yml` 补丁（管理根 `docs/history/ops/browser-web-enable-patch-20260930.md`）：**2026-09-30 已应用**（用户反馈「没看到三个官方，只看到2个」= 要求浏览器回来；备份 `cordis.patch.yml.bak-browser-*`），重启后官方组出现「浏览器」（见 [RMP-风险管理.md](../管理/RMP-风险管理.md)） | spec 003 R4（已应用 + 已重启） |
 | 配置全局一份、可持久化 | DSH settings 命名空间 `sidebar-hub`（v0.1.7 起 = **profile 条目 id**，旧包名 `dsh-sidebar-hub` 退役）；绑定上游 `configForms`（旧 `settingsScope` 已移除）；`base` = 出厂分类（entry `Config` 的 volatile 字段默认值），「恢复默认」= `unset` 回落 base | spec §2.5 / v0.1.7 settings 契约适配 |
 | 全屏展示（覆盖整个浏览器） | **不由本插件实现**：属 DSH WEB 层能力，用户在应用层处理；插件只做侧栏内容 | spec §2.6（非目标） |
 | 独立路由 | `/shub/*`（JSON 网关 + WS + 媒体/HTML/上传 + `/shub/bundle` 惰性 chunk），前置 trust-fence | plan §1 |
@@ -51,7 +55,7 @@
 | T10 | 拖拽与分组管理：跨组移动 / 组内排序 / 新建·重命名·删除·折叠 / 恢复默认 | ✅ 完成（冒烟段 7） |
 | T11 | 配置持久化：host settings 命名空间（schema + base）+ client `config-store`（唯一写入口） | ✅ 完成（冒烟段 7） |
 | T12 | 设置页卡片「右侧栏分类」：分组管理 + 每条 kind（分组 / 显示名 / 隐藏 / 移除规则）+ 未登记提示 | ✅ 完成（冒烟段 8） |
-| T13 | 收敛：spec §7 十条验收在测试实例逐条通过（`test/ui-acceptance.mjs` **41/41**，含数据面与语音环境断言）+ 文档同步 + 3082 未被触碰 | ✅ 完成（测试实例 3085，better-sidebar 已卸载，截图在 `docs/verify/`） |
+| T13 | 收敛：spec §7 十条验收在测试实例逐条通过（`test/ui-acceptance.mjs` **41/41**，含数据面与语音环境断言）+ 文档同步 + 3082 未被触碰 | ✅ 完成（测试实例 3085，better-sidebar 已卸载，截图在 `docs/测试/证据/verify/`） |
 | S03 | **v0.1.4–0.1.6 升级漂移同步（spec 003）**：v0.1.4 实现 R1（entries()∪guide() 发现）+ R2（漂移提醒）+ R3（官方自动归组）；**v0.1.5 用户纠正**：发现源改为 guide-only、撤销 R3 官方推断/角标/自动归组、漂移改对账 guide 入口集；**v0.1.6** 出厂映射加 `opscrew-workbench`（应急指挥工作台）归「工作台」；`pnpm check` 全绿；3084 复验关键项 PASS（2b2：无内部类型混入）；0.1.5/0.1.6 已装入 3082，重启待用户 | ✅ v0.1.6 实现完成（2026-09-30） |
 
 ## 当前已知取舍（诚实记录，不掩盖）
@@ -62,5 +66,5 @@
 - **默认四组受保护（v0.8 起）**：官方/工作台/工具/游戏 不可删除（用户新建分组可删）；官方不可重命名（其余默认组可改名）。
 - **视图尺寸（历史，v0.6 起无正文）**：框架面板的 body 是块级滚动容器（`paneBody` 无 `display:flex`），曾对五个 hub 正文套 `.hubTabFill { height:100% }`；该取舍随自研内容类型移除而失效，分类框架自身用 `height:100%` 撑满即可。
 - **settings 存储形态 vs 内存形态**：存储（`settings.yaml`）里 `entries[kind]` 恒为 `{groupId, label, hidden}` 三键齐全（空值 `''`/`false` = 未设置），因为 settings 对字典**深合并**——「键缺席」等于继承 base，删键会让出厂规则复活；client 内存里是稀疏形态。桥接在 `config-store.ts` 的 `toStoredEntries()` / `normalizeConfig()`。
-- **`@deepseek-ai/schemastery` dev 依赖**：本机 pnpm store 只读，开发期用 `node_modules/@deepseek-ai/schemastery → ~/.dsh-dev/profiles/web/...` 的软链解析类型；正式机器 `pnpm install` 即可。运行时该依赖由目标 profile 自带（host 产物 external）。详见 TROUBLESHOOTING。
+- **`@deepseek-ai/schemastery` dev 依赖**：本机 pnpm store 只读，开发期用 `node_modules/@deepseek-ai/schemastery → ~/.dsh-dev/profiles/web/...` 的软链解析类型；正式机器 `pnpm install` 即可。运行时该依赖由目标 profile 自带（host 产物 external）。详见 [RMP-风险管理.md](../管理/RMP-风险管理.md)（原 `TROUBLESHOOTING.md`）。
 - **不再依赖 better-sidebar（已达成，v0.6 起）**：目标形态成立——hub 自研内容类型全部移除（仅 mermaid 渲染管线保留其 MIT 署名，见 `LICENSE`），测试实例已卸载；**不再跟踪其上游**（无拷贝/改造文件需要同步）。

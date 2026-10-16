@@ -10,6 +10,12 @@
 - 状态：**T1–T7 全部完成**（T7 已在测试实例 28/28 通过）/ 日期 2026-09-13
 - 规则：一个任务一个逻辑改动；每任务有完成定义与验证；全程在 **3084 测试环境**验证，不碰 3082。
 
+> 注（2026-10-13）：本文件是 **v0.1.3 的任务清单与逐轮验收留档**（结论按当时口径）。此后已变：
+> settings 命名空间改为 `sidebar-hub`（= profile 条目 id），host 不再 `settings.register()`、client 不再
+> `settingsScope`（v0.1.7）；设置卡片槽从 `settings.plugin.item` 迁到 `plugins.bundle.config`（官方
+> 0.1.6-alpha.2 设置页重构）；自研 `hub-*` 六功能类型与正文已全部移除（v0.6）。当前态见插件
+> [README.md](../../README.md) 与 [BRD-业务需求说明书.md](../需求/BRD-业务需求说明书.md)。
+
 ## T1 清理与骨架 — ✅ 完成
 
 - 目标：删掉错误方向的实施（容器内分层），保留可复用资产，目录按新方向落位。
@@ -62,7 +68,7 @@
 - 命令：
   - `pnpm check`（build + typecheck + `node --check` + 两组冒烟）
   - `node test/ui-acceptance.mjs --url "<测试实例 tokenized URL>" --profile-dir <持久 Chrome 目录>`
-    → CDP 驱动本机 Chrome 做真实 UI 断言（含截图落到 `docs/verify/`）
+    → CDP 驱动本机 Chrome 做真实 UI 断言（含截图落到 `docs/测试/证据/verify/`）
 - 用户反馈 5 项（2026-09-13 第二轮）与处置：
   | # | 反馈 | 处置 |
   |---|---|---|
@@ -102,12 +108,12 @@
   | 8 | 官方 files 未被接管 | 转发打开正常；静态红线由冒烟测试守（产物无 `files` kind、无 `dsh-resource://file`） |
   | 9 | 构建门禁 | `pnpm check` 全绿；closure-factory 恰好 1 次、无顶层 import；`/sidebar/` 前缀零残留；`apiPost` 拆 `{ok,value}` 信封（新增门禁） |
   | 10 | 不触碰 3082 | 全程只在 3085 + `dsh-plugins/dsh-test-home`；3082 未重启、未改配置 |
-- 真机暴露并修复的三个问题（冒烟测试没抓到，教训见 TROUBLESHOOTING）：
+- 真机暴露并修复的三个问题（冒烟测试没抓到，教训见 `docs/管理/RMP-风险管理.md`（原 `TROUBLESHOOTING.md`））：
   1. inject 的 `hooks` 格是 **uSES 选择器钩子**，组件必须传 selector（原来 `useCatalog()`/`useSessions()` 无参调用 → `slot entry crashed`）；
   2. 框架 `paneBody` 是**块级滚动容器**，视图的 `flex:1` 不生效 → 六个正文改用 `height:100%` 外壳（任务管理此前只有 39px 高）；
   3. `subagents.live` 的 `live` 字段缺失防御（`Object.keys(undefined)` 会让整个 tab body 崩）。
 - 另记（**非本插件**，交回用户）：`dsh-global-auth` 往 list 槽 `sidebar.footer.action` 注册时未带 `options.id`，当前 harness 的 list 槽要求 id → 控制台 2 条 error。本插件验收已把它单列，不计入判定。
-- 截图证据：`docs/verify/01-catalog.png`、`02-files-forward.png`、`03-settings-card.png`、`04-catalog-after-hide.png`、`05-final.png`。
+- 截图证据：`docs/测试/证据/verify/01-catalog.png`、`02-files-forward.png`、`03-settings-card.png`、`04-catalog-after-hide.png`、`05-final.png`。
 
 ## 历史沿革（v0.2–v0.9 变更，压成 5 条；决策原委见 spec.md §0，验收条号见 spec.md §7 增补）
 
@@ -115,7 +121,7 @@
    `entry.ts` 去 hub-terminal；host 删 `pty-manager`/`agent-pty`/`pty-deps`/`terminal-ws`/`tools`，`api.ts` 去
    `pty.close`/`shell.get`/`terminal.deps`/`agent.pty.close`（`agent-opens` 保留并就地接线）；映射 `terminal → official`、
    `sudoku → games`；依赖删 `node-pty`/`@xterm/xterm`/`@xterm/addon-fit`；三组测试断言同步。
-   验证：`pnpm check` 全绿；测试实例「终端（官方）」打开官方终端、数独在「游戏」组（见 PROGRESS.md）。
+   验证：`pnpm check` 全绿；测试实例「终端（官方）」打开官方终端、数独在「游戏」组（见 `docs/管理/PP-项目计划.md`，原 `PROGRESS.md`）。
 2. **v0.3 + v0.4（2026-09-17）文件预览增强与字号跟随** — v0.3 注册 `dsh-sidebar-hub/markdown` +
    `dsh-sidebar-hub/office` 渲染器，惰性 chunk `dist/chunk-mermaid.js`/`dist/chunk-office.js` 经 `/shub/bundle/<name>.js`
    伺服，`/shub/file` 支持工作区相对路径；依赖 +mammoth +jszip。v0.4 `hub-font.css` 声明 `--hub-font-*` 偏移刻度，

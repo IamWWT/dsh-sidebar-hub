@@ -17,6 +17,6 @@ date: 2026-10-08
 
 ### 其他材料
 
-- [[原型/prototype-shot.png|prototype-shot.png]]
-- [[原型/q7-q8-explainer.html|q7-q8-explainer.html]]
-- [[原型/right-sidebar-categorized-prototype.html|right-sidebar-categorized-prototype.html]]
+- [prototype-shot.png](原型/prototype-shot.png)
+- [q7-q8-explainer.html](原型/q7-q8-explainer.html)
+- [right-sidebar-categorized-prototype.html](原型/right-sidebar-categorized-prototype.html)

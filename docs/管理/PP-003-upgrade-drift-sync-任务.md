@@ -19,10 +19,10 @@
       hooks 键 = catalog+drift）+ host-settings（drift 桶深合并/schema 补默认）；
       `pnpm check` 全绿（2026-09-30，`ops/validation/test-build-2.log` 为 rc.2 测试实例构建证据）。
 - [x] T5 打包与交付：版本 0.1.4 四处同步 + 打包完成（`pnpm pack` 产 `dsh-sidebar-hub-0.1.4.tgz`，含
-      `dist/`；本机 `npm pack` 因只读 pnpm store 报 EROFS，`pnpm pack` 等价替代）；README/PROGRESS/
-      CHANGELOG/TROUBLESHOOTING 同步完成；3084 测试实例端到端复验**已做**（装 tgz + 重启 3084 +
+      `dist/`；本机 `npm pack` 因只读 pnpm store 报 EROFS，`pnpm pack` 等价替代）；README/PP-项目计划（原 PROGRESS）/
+      CHANGELOG/RMP（原 TROUBLESHOOTING）同步完成；3084 测试实例端到端复验**已做**（装 tgz + 重启 3084 +
       `ui-acceptance.mjs` **23/35**：12 项 FAIL 全部归因最小 profile 缺插件与上游 web 禁用浏览器，
-      0.1.4 新能力项全 PASS，截图 `docs/verify-v014/`，复盘入 TROUBLESHOOTING 2026-09-30 条目）；
+      0.1.4 新能力项全 PASS，截图 `docs/测试/证据/verify-v014/`，复盘入 `docs/管理/RMP-风险管理.md`（原 TROUBLESHOOTING）2026-09-30 条目）；
       3082 安装待用户批准。
-- [ ] T6（用户侧动作，代理协助）：批准 → 应用管理根 `ops/browser-web-enable-patch-20260930.md`
+- [ ] T6（用户侧动作，代理协助）：批准 → 应用管理根 `docs/history/ops/browser-web-enable-patch-20260930.md`
       补丁（3082 profile 的 `cordis.patch.yml`）；批准 → 重启 3082；真机目检验收（spec §3 条 1/3）。

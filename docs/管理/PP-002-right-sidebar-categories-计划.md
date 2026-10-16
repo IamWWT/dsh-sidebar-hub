@@ -10,6 +10,12 @@
 - 状态：**已实现并冒烟验证**（真实实例 UI 验收待 T7）/ 日期 2026-09-13
 - 前置：[BRD-002-right-sidebar-categories.md](../需求/BRD-002-right-sidebar-categories.md)（需求已冻结）
 
+> 注（2026-10-13）：本文件是 **v0.1.3 时点的设计快照**，此后已发生的变化（不改原文）：
+> 自研 `hub-*` 内容类型与六功能正文全部移除（v0.6，仅保留 md(mermaid) 渲染器）、终端与浏览器交还官方
+> （v0.2/v0.5）、Office 渲染器交还官方（v0.7）、settings 命名空间改为 `sidebar-hub` 且
+> `ctx.settings.register` / `ctx.settingsScope` 均被上游移除（v0.1.7，改 `configForms.get(entryId)`）。
+> 当前态见插件 [README.md](../../README.md) 与 [BRD-业务需求说明书.md](../需求/BRD-业务需求说明书.md)。
+
 ## 1. 架构
 
 ```

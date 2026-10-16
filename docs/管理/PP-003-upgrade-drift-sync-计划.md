@@ -3,6 +3,12 @@
 > 上游契约出处以 **DSH 0.2.0-rc.2**（本机 checkout `dsh-v0.2.0-rc.2`，2026-09-30 核实）为准。
 > 所有扩展点均为上游公开 API；不修改上游、不写兼容垫片。
 
+> 注（2026-10-13）：本文为 v0.1.4 定稿的计划原文，两处已被后续修订取代——① settings 命名空间自
+> v0.1.7 起为 `sidebar-hub`（= profile 条目 id），且 host 不再调 `settings.register()`，schema 由
+> entry 导出的 `Config`（`.volatile()` 字段）自动发现；② 发现源自 v0.1.5 起为 `guide()` only，
+> `entries()` 与官方性推断（`@deepseek-ai/` 前缀）已删除。见
+> [BRD-003-upgrade-drift-sync.md](../需求/BRD-003-upgrade-drift-sync.md) 的两节「修订」。
+
 ## 1. 契约出处（只读引用）
 
 | 契约 | 出处（上游相对路径） | 说明 |

@@ -1,4 +1,4 @@
-# TROUBLESHOOTING — dsh-sidebar-hub
+# RMP-风险管理 — dsh-sidebar-hub（事故复盘档案，原 `TROUBLESHOOTING.md`）
 
 ## 当前状态
 
@@ -27,6 +27,10 @@
 **后续同类**：`sessionCwdOf` 访问 `ctx.sessions` 同样报 `cannot get property "sessions" without inject`。
 
 **修复**：`inject = ['webServer', 'webRuntime', 'sessions']`（AGENTS.md 工程规范早有此条——"Host 侧凡在 apply/路由里直接 ctx.xxx 取用的服务，必须写 inject"；吸收代码时漏了这两处）。
+
+> 注（2026-10-13）：上面这行是 2026-09-12 时点的修复。上游 0.2.1-alpha.2 已删除 `webRuntime` 服务，
+> 本插件现行 `inject` = `['webServer', 'webStartup', 'sessions']`（v0.1.8 迁移，见
+> [CHANGELOG.md](../../CHANGELOG.md) 0.1.8 与 ../../AGENTS.md）；照抄本文旧行会让插件永久 pending。
 
 **验证**：`shell.get` / `terminal.deps` / `fs.tree` / `git.status` / `changes.ops` 全部返回 `{"ok":true,...}`。
 

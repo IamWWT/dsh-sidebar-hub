@@ -17,5 +17,5 @@ date: 2026-10-08
 
 | 前缀 | 交付物 | 文件 |
 |---|---|---|
-| `PP-` | 项目计划 | [[PP-002-right-sidebar-categories-任务|PP-002-right-sidebar-categories-任务]]、[[PP-002-right-sidebar-categories-计划|PP-002-right-sidebar-categories-计划]]、[[PP-003-upgrade-drift-sync-任务|PP-003-upgrade-drift-sync-任务]]、[[PP-003-upgrade-drift-sync-计划|PP-003-upgrade-drift-sync-计划]]、[[PP-20260925-native-entry-ui-任务|PP-20260925-native-entry-ui-任务]]、[[PP-20260925-native-entry-ui-计划|PP-20260925-native-entry-ui-计划]]、[[PP-项目计划|PP-项目计划]] |
-| `RMP-` | 风险管理 | [[RMP-风险管理|RMP-风险管理]] |
+| `PP-` | 项目计划 | [[管理/PP-002-right-sidebar-categories-任务|PP-002-right-sidebar-categories-任务]]、[[管理/PP-002-right-sidebar-categories-计划|PP-002-right-sidebar-categories-计划]]、[[管理/PP-003-upgrade-drift-sync-任务|PP-003-upgrade-drift-sync-任务]]、[[管理/PP-003-upgrade-drift-sync-计划|PP-003-upgrade-drift-sync-计划]]、[[管理/PP-20260925-native-entry-ui-任务|PP-20260925-native-entry-ui-任务]]、[[管理/PP-20260925-native-entry-ui-计划|PP-20260925-native-entry-ui-计划]]、[[管理/PP-项目计划|PP-项目计划]] |
+| `RMP-` | 风险管理 | [[管理/RMP-风险管理|RMP-风险管理]] |

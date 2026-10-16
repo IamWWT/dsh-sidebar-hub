@@ -73,7 +73,7 @@
   显式规则归组）；ui-acceptance 新增 2b2 内部类型混入守卫；host-settings drift 形状断言更新；
   `pnpm check` 全绿。
 - 3084 复验：`ui-acceptance.mjs` 26/36，关键项 PASS——2b2「无内部 tab 类型混入分类页」、
-  2d「官方组 = files+terminal（浏览器未启用时）」；截图 `docs/verify-v015/`。
+  2d「官方组 = files+terminal（浏览器未启用时）」；截图 `docs/测试/证据/verify-v015/`（原 `docs/verify-v015/`）。
 
 ## 0.1.4 · 2026-09-30
 
@@ -96,7 +96,7 @@
   web 侧重新启用为 profile 层补丁（管理根 `ops/browser-web-enable-patch-20260930.md`），
   是否应用由用户决定。
 - 交付状态：源码与 tgz 完成（`dsh-sidebar-hub-0.1.4.tgz`）；3082 安装与重启待用户批准，
-  3084 测试实例复验见 `docs/PROGRESS.md`。
+  3084 测试实例复验见 `docs/管理/PP-项目计划.md`（原 `docs/PROGRESS.md`）。
 
 ## 0.1.3 · 2026-09-25（2026-09-30 补记）
 

@@ -4,7 +4,7 @@
 
 **定位**：把右侧栏**起始页**换成按功能分组的分类界面：各插件入口按 **官方 → 工作台 → 工具 →
 游戏** 四组归类（带语义色与图标），未登记 kind 落「其他」；分组与映射可由用户在分类页拖拽或
-设置页卡片维护，配置存 DSH settings 的 `dsh-sidebar-hub` 命名空间。本插件只做**入口编排**——
+设置页卡片维护，配置存 DSH settings 的 `sidebar-hub` 命名空间（= profile 条目 `id`，非包名）。本插件只做**入口编排**——
 终端/浏览器/Office 预览由官方内置接管，仅保留 md(mermaid) 渲染器（走官方 `documentPreviews`）；
 自研内容类型已全部移除，不提供落地页。
 **不是**：不接管官方文件浏览/预览、终端/浏览器/Office 预览；不做「覆盖整个浏览器的全屏」；
@@ -12,8 +12,9 @@
 
 ## 开发流程（SDD，强制）
 
-按 [GitHub Spec Kit](https://github.com/github/spec-kit) 流程，规格在 `docs/需求/` 与 `docs/管理/`<id>/`
-（当前有效：`docs/需求/BRD-002-right-sidebar-categories.md`）：Specify（spec.md：需求/非目标/
+按 [GitHub Spec Kit](https://github.com/github/spec-kit) 流程，规格在 `docs/需求/`（`BRD-*`）与
+`docs/管理/`（`PP-*` / `RMP-*`；与 BRD 同 id 的 plan/tasks）（当前有效：
+`docs/需求/BRD-002-right-sidebar-categories.md`、`docs/需求/BRD-003-upgrade-drift-sync.md`）：Specify（需求/非目标/
 验收标准）→ Clarify → Plan（host/client 划分、插槽接线、合约出处、风险）→ Tasks → Implement →
 Converge（`pnpm check` + 真实实例 UI 逐条对照验收）。**规格未获用户确认前禁止进入实现。**
 
@@ -23,11 +24,12 @@ Converge（`pnpm check` + 真实实例 UI 逐条对照验收）。**规格未获
 - **禁止接管官方文件能力**：不注册 `kind:'files'` extension 与 `dsh-resource://file/**` viewer，
   只允许 `openTab('files')` 转发入口。
 - **禁止改动用户其他自研插件**：只读其引导条目（自动发现），不注册同名 kind 顶替。
-- **不依赖第三方运行时**：仅剩 mermaid 管线（吸收自 better-sidebar，MIT，保留署名与来源注释）。
+- **不依赖第三方运行时**：唯一吸收自 better-sidebar 的是 mermaid 渲染管线（MIT，保留署名与来源注释）；
+  其余运行时依赖见 `package.json`（host 侧 `ws` 保持 external；client 侧 clsx/dompurify/mermaid/react-icons 进 bundle）。
 - **验证必须用测试实例**：`dsh-plugins/dsh-test/` + 独立 DSH_HOME + 独立端口（3084/3085）；
   **禁止**触碰 3082；测试实例用完关闭，不写开机自启。
 - **client 产物必须是 closure-factory**：`__ModuleLoader__.load({id, factory})` 恰好一次、无顶层
-  `import`（见 `TROUBLESHOOTING.md`）。**禁止提交 secrets**。
+  `import`（见 `docs/管理/RMP-风险管理.md` 的 2026-09-12 条目）。**禁止提交 secrets**。
 
 ## 结构与命令
 
@@ -48,7 +50,7 @@ npm pack       # 产 tgz
 
 ```bash
 node test/ui-acceptance.mjs --url "http://127.0.0.1:3085/?token=..." \
-  --profile-dir <持久 Chrome 目录> --shot-dir ./docs/verify
+  --profile-dir <持久 Chrome 目录> --shot-dir ./docs/测试/证据/verify-<版本>
 node test/probe-tab.mjs --url "http://127.0.0.1:3085/?token=..." --kind <kind> --wait 8000  # 单 tab 排错
 ```
 
@@ -56,13 +58,16 @@ node test/probe-tab.mjs --url "http://127.0.0.1:3085/?token=..." --kind <kind> -
 `DSH_HOME=<独立测试 DSH_HOME> pnpm dsh web --port 3084 --no-open`，再
 `pnpm dsh plugin --profile web add <本插件目录或 tgz>`。
 
-## 关键契约（出处见 `docs/需求/` 与 `docs/管理/`002-*/plan.md` §2）
+## 关键契约（出处见 `docs/需求/BRD-002-right-sidebar-categories.md` 与 `docs/管理/PP-002-right-sidebar-categories-计划.md` §2）
 
 - `sidebar.right.tab.guide` 是 **chain** 槽：注册需 `select`（首个返回非 `null` 者接管），纯函数、
   返回稳定引用；自动发现用 `ctx.sidebarRightTabs.guide()` → `{kind, order, title()}[]` + `subscribe()`；
   打开用 `ctx.sidebarRight.openTab(kind)`（未注册会抛）。
-- 配置：host `ctx.settings.register(ns, schema, { base })`（第三参是 **options**）；client
-  `ctx.settingsScope.bind({namespace})` → `getSnapshot / subscribe / mutate / unset`。
+- 配置：命名空间 = **profile 条目 id**（`cordis.patch.yml` 的 `id: sidebar-hub`）。host 侧导出 `Config`
+  （z.object，设置字段标 `.volatile()`）由上游 `SettingsForms.describe()` 按 `entry.options.id` 自动发现
+  ——**不再调 `settings.register()`**；client 侧 `ctx.configForms.get('sidebar-hub')` →
+  `getSnapshot / subscribe / mutate / unset`（`settingsScope` 已随上游 0.2.0-rc.2 移除；卡片 key 另用
+  `SETTINGS_CARD_KEY` = 包名）。
 - settings 对普通对象**深合并**、数组**整桶替换** ⇒ 清空字段要写显式 `''`，不能删键（否则出厂
   规则复活）。
 - `hooks` 格的钩子必须带 selector（`useCatalog(selector, isEqual?)`），无参调用抛 `is not a function`；
@@ -75,15 +80,18 @@ node test/probe-tab.mjs --url "http://127.0.0.1:3085/?token=..." --kind <kind> -
   （`--dsw-alias-brand-primary` 浅色下是墨色，勿当"蓝色"用）；色调表见 `shared/catalog-config.ts`。
 - 设置卡片需自写 `<li>` + 折叠按钮（框架不导出 `PluginCard`，照
   `ui-settings-plugins/PluginCard.module.css`）。
-- `/shub/api` 信封由 host `wire.ts: writeOk` 写 `{ok:true, value}`；网络面仅 `/shub/file`（md 图片）与
-  `/shub/bundle`（mermaid chunk）。
+- `/shub/api` 信封由 host `wire.ts: writeOk` 写 `{ok:true, value}`；注册的路由共 6 个：
+  `/shub/api`、`/shub/file`（md 图片）、`/shub/html`（沙箱 HTML 预览，client 未调用）、`/shub/upload`、
+  `/shub/bundle`（惰性 chunk）、`/shub/ws/agent-opens`（`sidebar_open` 推送）。
 - 无门禁实例 ≠ 环境可用：读 `dshAuth` 的插件无会话时全 401；人工交付需登录态或 3082。
-- 机器相关配置在 profile 层 patch（`modelDir` 等由 `cordis.patch.yml` 提供）；迁移 DSH_HOME 时除
-  bundles 还要带 `cordis.patch.yml` 与 `profiles/web/data/<plugin>/`。
+- 本插件的机器无关配置在 `cordis.patch.yml`（`workspaceFenceEnabled` / `uploadLimitBytes` /
+  `mediaLimitBytes` / `listLimit` / `readLimit`，`settings.yaml` 可覆盖），无绝对路径与机密项；迁移
+  DSH_HOME 时除 bundles 还要带 `cordis.patch.yml` 与 `profiles/web/data/<plugin>/`。
 - list 槽注册必须带 `id`。
 
 ## 文档同步
 
-- 功能/架构/决策变更 → 同步 `docs/README.md`、`docs/需求/BRD-业务需求说明书.md`、`docs/需求/` 与 `docs/管理/`<id>/*`。
+- 功能/架构/决策变更 → 同步 `docs/README.md`、`docs/FILE_INDEX.md`、`docs/需求/BRD-业务需求说明书.md`、
+  `docs/需求/` 与 `docs/管理/` 下对应的 `BRD-*` / `PP-*` 文件。
 - 踩坑/事故 → 追加 `docs/管理/RMP-风险管理.md`（现象 → 根因 → 修复 → 教训）。
 - README 只描述当前行为，历史决策留 docs；通用规则见 `../AGENTS.md` 与 `../../AGENTS.md`。

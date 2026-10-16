@@ -17,4 +17,4 @@ date: 2026-10-08
 
 | 前缀 | 交付物 | 文件 |
 |---|---|---|
-| `BRD-` | 业务需求说明书 | [[BRD-002-right-sidebar-categories|BRD-002-right-sidebar-categories]]、[[BRD-003-upgrade-drift-sync|BRD-003-upgrade-drift-sync]]、[[BRD-20260925-native-entry-ui|BRD-20260925-native-entry-ui]]、[[BRD-业务需求说明书|BRD-业务需求说明书]] |
+| `BRD-` | 业务需求说明书 | [[需求/BRD-002-right-sidebar-categories|BRD-002-right-sidebar-categories]]、[[需求/BRD-003-upgrade-drift-sync|BRD-003-upgrade-drift-sync]]、[[需求/BRD-20260925-native-entry-ui|BRD-20260925-native-entry-ui]]、[[需求/BRD-业务需求说明书|BRD-业务需求说明书]] |
